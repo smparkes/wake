@@ -47,7 +47,6 @@ module Watchr
         end
 
         def file_deleted
-          stop_watching
           SingleFileWatcher.handler.notify(path, type)
         end
 

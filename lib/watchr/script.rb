@@ -22,7 +22,9 @@ module Watchr
 
     class Rule
       def match path
-        ( md = self.pattern.match(path) ) &&
+        pattern = self.pattern
+        ( pattern.class == String ) and ( pattern = Regexp.new pattern )
+        ( md = pattern.match(path) ) &&
           ( self.predicate == nil || self.predicate.call(md) )
       end
     end
@@ -160,8 +162,9 @@ module Watchr
       # p path
       rules_for(path).each do |rule|
         # p rule
-        rule.event_types.each do |rule_event_type|
-          # p rule_event_type
+        types = rule.event_types
+        !types.empty? or types = [ nil ]
+        types.each do |rule_event_type|
           if ( rule_event_type.nil? && ( event_type != :load ) ) || ( rule_event_type == event_type )
             data = path.match(rule.pattern)
             return rule.action.call(data)

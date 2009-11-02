@@ -25,13 +25,13 @@ class TestScript < Test::Unit::TestCase
   test "rule object" do
     rule = @script.watch('pattern', :modified) { nil }
     rule.pattern.should be('pattern')
-    rule.event_type.should be(:modified)
+    rule.event_types[0].should be(:modified)
     rule.action.call.should be(nil)
   end
 
   test "default event type" do
     rule = @script.watch('pattern') { nil }
-    rule.event_type.should be(:modified)
+    rule.event_types[0].should be(:modified)
   end
 
   test "finds action for path" do

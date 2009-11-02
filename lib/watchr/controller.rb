@@ -83,8 +83,10 @@ module Watchr
     #
     def monitored_paths
       paths = Dir['**/*'].select do |path|
+p path
         @script.rules.any? {|r| r.match(path) }
       end
+p paths
       paths.push(@script.path).compact!
       paths.map {|path| Pathname(path).expand_path }
     end
