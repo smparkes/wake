@@ -1,6 +1,6 @@
 === Summary
 
-This is a fork of the Watchr gem at git://github.com/mynyml/watchr.git.
+This is a fork of the Watchr gem at http://github.com/mynyml/watchr.
 
 The are a number of differences. It's been ported to EventMachine for
 file-events and has some extensions for how watches can be written.
