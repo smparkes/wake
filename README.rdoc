@@ -69,11 +69,11 @@ first started, similar to what autotest does.
 
 === Things to do
 
-1 Batch up specs instead of running them individually (not a big deal
-for jazrb and haml; a big detail for rspec
+1. Batch up specs instead of running them individually (not a big deal
+for jazrb and haml; a big detail for rspec)
 
-1 Integrate upstream (?)
+1. Integrate upstream (?)
 
-1 Move directory watch into watchr itself
+1. Move directory watch into watchr itself
 
-1 Handle interrupt processing more systematically
+1. Handle interrupt processing more systematically
