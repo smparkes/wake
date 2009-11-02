@@ -38,6 +38,7 @@ module Watchr
 
         def file_modified
           SingleFileWatcher.handler.notify(path, type)
+          update_reference_times
         end
 
         def file_moved
@@ -48,13 +49,6 @@ module Watchr
         def file_deleted
           stop_watching
           SingleFileWatcher.handler.notify(path, type)
-        end
-
-        # Callback. Called on file change event
-        # Delegates to Controller#update, passing in path and event type
-        def on_change
-          self.class.handler.notify(path, type)
-          update_reference_times unless type == :deleted
         end
 
         private
