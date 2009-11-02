@@ -5,6 +5,12 @@ This is a fork of the Watchr gem at git://github.com/mynyml/watchr.git.
 The are a number of differences. It's been ported to EventMachine for
 file-events and has some extensions for how watches can be written.
 
+To install, you can clone the repo (http://github.com/smparkes/watchr)
+or install the gem, <tt>smparkes-watchr</tt>. Note that you'll need my
+copy of EventMachine (git://github.com/smparkes/eventmachine.git or
+the <tt>smparkes-eventmachine</tt> gem) for directory watches to work
+well. (Hoping these changes will get pulled upstream ...)
+
 == EventMachine
 
 Not much to say. It supports EM as well as Rev. The default is still
