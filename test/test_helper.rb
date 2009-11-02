@@ -50,3 +50,11 @@ ensure
   $stdout = orig_stdout
   $stderr = orig_stderr
 end
+
+begin
+  require "watchr/event_handlers/rev"
+  HAVE_REV = true
+rescue LoadError
+  HAVE_REV = false
+end
+

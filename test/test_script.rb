@@ -37,24 +37,24 @@ class TestScript < Test::Unit::TestCase
   test "finds action for path" do
     @script.watch('abc') { :x }
     @script.watch('def') { :y }
-    @script.action_for('abc').call.should be(:x)
+    @script.call_action_for('abc').should be(:x)
   end
 
   test "finds action for path with event type" do
     @script.watch('abc', :accessed) { :x }
     @script.watch('abc', :modified) { :y }
-    @script.action_for('abc', :accessed).call.should be(:x)
+    @script.call_action_for('abc', :accessed).should be(:x)
   end
 
   test "finds action for path with any event type" do
     @script.watch('abc', nil) { :x }
     @script.watch('abc', :modified) { :y }
-    @script.action_for('abc', :accessed).call.should be(:x)
+    @script.call_action_for('abc', :accessed).should be(:x)
   end
 
   test "no action for path" do
     @script.watch('abc', :accessed) { :x }
-    @script.action_for('abc', :modified).call.should be(nil)
+    @script.call_action_for('abc', :modified).should be(nil)
   end
 
   test "collects patterns" do
@@ -71,7 +71,7 @@ class TestScript < Test::Unit::TestCase
     STR
     script = Script.new(file)
     script.parse!
-    script.action_for('abc').call.should be(:x)
+    script.call_action_for('abc').should be(:x)
   end
 
   test "resets state" do
@@ -90,16 +90,16 @@ class TestScript < Test::Unit::TestCase
 
   test "actions receive a MatchData object" do
     @script.watch('de(.)') {|m| [m[0], m[1]] }
-    @script.action_for('def').call.should be(%w( def f ))
+    @script.call_action_for('def').should be(%w( def f ))
   end
 
   test "rule's default action" do
     @script.watch('abc')
-    @script.action_for('abc').call.should be(nil)
+    @script.call_action_for('abc').should be(nil)
     @script.default_action { :x }
 
     @script.watch('def')
-    @script.action_for('def').call.should be(:x)
+    @script.call_action_for('def').should be(:x)
   end
 
   test "file path" do
@@ -113,12 +113,12 @@ class TestScript < Test::Unit::TestCase
     @script.watch('a/(.*)\.x')   { :x }
     @script.watch('a/b/(.*)\.x') { :y }
 
-    @script.action_for('a/b/c.x').call.should be(:y)
+    @script.call_action_for('a/b/c.x').should be(:y)
   end
 
   test "rule patterns match against paths relative to pwd" do
     @script.watch('^abc') { :x }
     path = Pathname(Dir.pwd) + 'abc'
-    @script.action_for(path).call.should be(:x)
+    @script.call_action_for(path).should be(:x)
   end
 end

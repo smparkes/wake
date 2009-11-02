@@ -1,6 +1,6 @@
 
 Gem::Specification.new do |s|
-  s.name              = 'watchr'
+  s.name              = 'smparkes-watchr'
   s.version           = '0.5.7'
   s.summary           = "Modern continious testing (flexible alternative to autotest)"
   s.description       = "Modern continious testing (flexible alternative to autotest)."
@@ -29,13 +29,16 @@ Gem::Specification.new do |s|
     lib/watchr/event_handlers/base.rb
     lib/watchr/event_handlers/portable.rb
     lib/watchr/event_handlers/unix.rb
+    lib/watchr/event_handlers/em.rb
+    lib/watchr/event_handlers/rev.rb
     lib/watchr/script.rb
     manifest.watchr
     specs.watchr
     test/README
     test/event_handlers/test_base.rb
     test/event_handlers/test_portable.rb
-    test/event_handlers/test_unix.rb
+    test/event_handlers/test_em.rb
+    test/event_handlers/test_rev.rb
     test/test_controller.rb
     test/test_helper.rb
     test/test_script.rb
@@ -48,7 +51,8 @@ Gem::Specification.new do |s|
     test/test_script.rb
     test/test_controller.rb
     test/event_handlers/test_base.rb
-    test/event_handlers/test_unix.rb
+    test/event_handlers/test_em.rb
+    test/event_handlers/test_rev.rb
     test/event_handlers/test_portable.rb
   ]
 

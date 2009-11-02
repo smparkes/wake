@@ -1,5 +1,7 @@
 module Watchr
 
+  class Refresh < Exception; end
+
   # The controller contains the app's core logic.
   #
   # ===== Examples
@@ -17,18 +19,23 @@ module Watchr
   #
   class Controller
 
+    def handler
+      @handler ||= begin
+                     handler = Watchr.handler.new
+                     handler.add_observer self
+                     Watchr.debug "using %s handler" % handler.class.name
+                     handler
+                   end
+      @handler
+    end
+
     # Creates a controller object around given <tt>script</tt>
     #
     # ===== Parameters
     # script<Script>:: The script object
     #
-    def initialize(script, handler)
+    def initialize(script)
       @script  = script
-      @handler = handler
-
-      @handler.add_observer(self)
-
-      Watchr.debug "using %s handler" % handler.class.name
     end
 
     # Enters listening loop.
@@ -37,7 +44,7 @@ module Watchr
     #
     def run
       @script.parse!
-      @handler.listen(monitored_paths)
+      handler.listen(monitored_paths)
     rescue Interrupt
     end
 
@@ -56,9 +63,13 @@ module Watchr
 
       if path == @script.path
         @script.parse!
-        @handler.refresh(monitored_paths)
+        handler.refresh(monitored_paths)
       else
-        @script.action_for(path, event_type).call
+        begin
+          @script.call_action_for(path, event_type)
+        rescue Refresh => refresh
+          handler.refresh(monitored_paths)
+        end
       end
     end
 

@@ -18,7 +18,9 @@ class TestController < Test::Unit::TestCase
     tmpfile     = Tempfile.new('foo')
     @script     = Script.new( Pathname.new( tmpfile.path ) )
     @handler    = MockHandler.new
-    @controller = Controller.new(@script, @handler)
+    Watchr.stubs(:handler).returns(MockHandler)
+    MockHandler.stubs(:new).returns(@handler)
+    @controller = Controller.new(@script)
   end
 
   test "triggers listening state on run" do
@@ -33,6 +35,7 @@ class TestController < Test::Unit::TestCase
   end
 
   test "adds itself as handler observer" do
+    @controller.handler
     @handler.count_observers.should be(1)
     @handler.delete_observer(@controller)
     @handler.count_observers.should be(0)
@@ -49,7 +52,7 @@ class TestController < Test::Unit::TestCase
     ))
     @script.watch('.\.z') { :x }
 
-    contrl = Controller.new(@script, MockHandler.new)
+    contrl = Controller.new(@script)
     contrl.monitored_paths.should include(to_p('b/x.z'))
     contrl.monitored_paths.should include(to_p('b/c/y.z'))
   end
@@ -63,7 +66,7 @@ class TestController < Test::Unit::TestCase
     ))
     @script.watch('.\.z') { :x }
 
-    contrl = Controller.new(@script, MockHandler.new)
+    contrl = Controller.new(@script)
     contrl.monitored_paths.should exclude(to_p('a'))
     contrl.monitored_paths.should exclude(to_p('b/c'))
     contrl.monitored_paths.should exclude(to_p('p/q.z'))
@@ -75,7 +78,7 @@ class TestController < Test::Unit::TestCase
 
     path   = to_p('some/file')
     script = Script.new(path)
-    contrl = Controller.new(script, MockHandler.new)
+    contrl = Controller.new(script)
     contrl.monitored_paths.should include(path)
   end
 
@@ -83,7 +86,7 @@ class TestController < Test::Unit::TestCase
 
   test "calls action for path" do
     path = to_p('abc')
-    @script.expects(:action_for).with(path, :modified).returns(lambda {})
+    @script.expects(:call_action_for).with(path, :modified).returns(nil)
 
     @controller.update('abc', :modified)
   end
@@ -103,6 +106,20 @@ class TestController < Test::Unit::TestCase
 
     @handler.expects(:refresh).with %w( foo bar )
     @controller.update(path)
+  end
+
+  test "refreshes handler on script action exception" do
+    path = to_p('abc')
+    @script.stubs(:path).returns(path)
+
+    file = to_p('012')
+    @script.expects(:call_action_for).with(file,nil).raises(Watchr::Refresh)
+
+    @controller.stubs(:monitored_paths).returns %w( foo bar )
+
+    @handler.expects(:refresh).with %w( foo bar )
+
+    @controller.update(file)
   end
 
   test "exits gracefully when Interrupted" do

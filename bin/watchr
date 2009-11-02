@@ -73,5 +73,5 @@ end
 relative_path = Pathname( ARGV.first )                   rescue abort(Watchr::Bin.usage)
 absolute_path = Watchr::Bin.find_in_load_path(relative_path) or abort("no script found; file #{relative_path.to_s.inspect} is not in path.")
 
-Watchr::Controller.new(Watchr::Script.new(absolute_path), Watchr.handler.new).run
+Watchr::Controller.new(Watchr::Script.new(absolute_path)).run
 
