@@ -1,108 +1,76 @@
 === Summary
 
-Agile development tool that monitors a directory tree, and triggers a user
-defined action whenever an observed file is modified. Its most typical use is
-continuous testing, and as such it is a more flexible alternative to autotest.
+This is a fork of the Watchr gem at git://github.com/mynyml/watchr.git.
 
+The are a number of differences. It's been ported to EventMachine for
+file-events and has some extensions for how watches can be written.
 
-=== Features
+== EventMachine
 
-watchr is:
+Not much to say. It supports EM as well as Rev. The default is still
+Rev. To use EventMachine, after you install the EM gem, I just add
 
-* Simple to use
-* Highly flexible
-* Evented               ( Listens for filesystem events with native c libs )
-* Portable              ( Linux, *BSD, OSX, Solaris, Windows )
-* Fast                  ( Immediately reacts to file changes )
+     begin; require 'watchr/event_handlers/em'; rescue LoadError; end
 
-Most importantly it allows running tests in an environment that is *agnostic* to:
+to my <tt>watchr.cnf</tt>. There may be better ways to do this.
 
-* Web frameworks        ( rails, merb, sinatra, camping, invisible, ... )
-* Test frameworks       ( test/unit, minitest, rspec, test/spec, expectations, ... )
-* Ruby interpreters     ( ruby1.8, ruby1.9, MRI, JRuby, Rubinius, ... )
-* Package frameworks    ( rubygems, rip, ... )
+=== Event processing extensions
 
+I made several changes to the way events are created/processed, mostly to make my watchr.cnf work:
 
-=== Usage
+  #!/usr/bin/env watchr
 
-On the command line,
+  begin; require 'watchr/event_handlers/em'; rescue LoadError; end
 
-  $ watchr path/to/script.file
+  watch( %r(.*), :modified, lambda { |md| File.directory? md[0] } ) do |md|
+    raise Watchr::Refresh
+  end
 
-will monitor files in the current directory tree, and react to events on those
-files in accordance with the script.
+  watch( %r((public/.*)\.haml$), [ :created, :modified ] ) do |md|
+    cmd = "rm -f #{md[1]}.html && haml -f html5 #{md[0]} #{md[1]}.html && chmod 444 #{md[1]}.html"
+    puts cmd
+    system cmd
+    if  $?.signaled? && $?.termsig == 2
+      Process.kill 2, 0
+    end
+  end
 
+  watch( %r((spec/.*[Ss]pec)\.(html|js)$), [ :load, :created, :modified ] ) do |md|
+    cmd = "jazrb #{md[0]}"
+    puts cmd
+  end
 
-=== Scripts
+The purpose of the first watch is to cause watchr to refresh when
+directories change. This allows new files to be picked up.  The watch
+pattern matches all files in the current directory tree (though not
+<tt>.</tt> itself), and watches for :modified events. It adds an extra
+lambda that is processed while looking at file paths: only directories
+will get watches put on them. (Otherwise .* would put watches on every
+file/directory in the tree, which seems kinda bad.
 
-The script contains a set of simple rules that map observed files to an action.
-Its DSL is a single method: watch(pattern, &action)
+The second watch looks for HAML files in my public directory and
+automatically converts them to HTML. These are static files, not
+served by an app server like Rails, but even with static files, I
+hate writing raw HTML. The extension here is that instead of a single
+event type, I can pass an array. In addition to the :modified, event,
+this will get called when watchr notes that a new file of this type
+has appeared. (Note this works starting from watchr's first pass;
+files created while watchr wasn't running don't count).
 
-  watch( 'a regexp pattern matching paths to observe' )  {|match_data_object| command_to_run }
+Then final watch looks for javascript and html spec files and runs
+them under jazrb (see http://github.com/smparkes/jazrb if
+interested). This case is similar to the previous but also adds the
+<tt>:load</tt> event. This event gets fired the first time a file is
+seen after watchr starts. This allows watchr to run all the specs when
+first started, similar to what autotest does.
 
-So for example,
+=== Things to do
 
-  watch( 'test/test_.*\.rb' )  {|md| system("ruby #{md[0]}") }
+# Batch up specs instead of running them individually (not a big deal
+  for jazrb and haml; a big detail for rspec
 
-will match any test file and run it whenever it is saved.
+# Integrate upstream (?)
 
-A continuous testing script for a basic project could be
+# Move directory watch into watchr itself
 
-  watch( 'test/test_.*\.rb' )  {|md| system("ruby #{md[0]}") }
-  watch( 'lib/(.*)\.rb' )      {|md| system("ruby test/test_#{md[1]}.rb") }
-
-which, in addition to running any saved test file as above, will also run a
-lib file's associated test. This mimics the equivalent autotest behaviour.
-
-It's easy to see why watchr is so flexible, since the whole command is custom.
-The above actions could just as easily call "jruby", "ruby --rubygems", "ruby
--Ilib", "specrb", "rbx", ... or any combination of these. For the sake of
-comparison, autotest runs with:
-
-  /usr/bin/ruby1.8 -I.:lib:test -rubygems -e "%w[test/unit test/test_helper.rb test/test_watchr.rb].each { |f| require f }"
-
-locking the environment into ruby1.8, rubygems and test/unit for all tests.
-
-And remember the scripts are pure ruby, so feel free to add methods,
-Signal#trap calls, etc. Updates to script files are picked up on the fly (no
-need to restart watchr) so experimenting is painless.
-
-The wiki[http://wiki.github.com/mynyml/watchr] has more details and examples.
-You might also want to take a look at watchr's own scripts,
-specs.watchr[http://github.com/mynyml/watchr/blob/master/specs.watchr],
-docs.watchr[http://github.com/mynyml/watchr/blob/master/docs.watchr] and
-gem.watchr[http://github.com/mynyml/watchr/blob/master/gem.watchr], to get you
-started.
-
-
-=== Install
-
-  gem install watchr --source http://gemcutter.org
-
-If you're on *nix and have the rev[http://github.com/tarcieri/rev/] gem
-installed, Watchr will detect it and use it automatically. This will make
-Watchr evented.
-
-  gem install rev
-
-
-=== See Also
-
-redgreen[http://github.com/mynyml/redgreen]:: Standalone redgreen eye candy for test results, ala autotest.
-phocus[http://github.com/mynyml/phocus]::     Run focused tests when running the whole file/suite is unnecessary.
-
-
-=== Links
-
-source:: http://github.com/mynyml/watchr
-docs::   http://docs.github.com/mynyml/watchr
-wiki::   http://wiki.github.com/mynyml/watchr
-bugs::   http://github.com/mynyml/watchr/issues
-
-=== Contributions
-
-macournoyer[http://github.com/macournoyer]:: suggested evented backend
-foca[http://github.com/foca]:: suggested automatically picking up watchr scripts bundled in gems
-TwP[http://github.com/TwP]:: patch, Rev gem optional in development
-gzuki[http://github.com/gzuki]:: patch, recognize some event types
-
+# Handle interrupt processing more systematically
