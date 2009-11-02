@@ -19,7 +19,7 @@ Rev. To use EventMachine, after installing the EM gem, I just add
      begin; require 'watchr/event_handlers/em'; rescue LoadError; end
 
 to my <tt>watchr.cnf</tt>. It'll use the first required backend, or
-Rev if none are (and Rev is installed).  There may be better ways to
+Rev if none are found (and Rev is installed).  There may be better ways to
 do this.
 
 === Event processing extensions
@@ -56,14 +56,15 @@ to make my <tt>watchr.cnf</tt> work:
 The purpose of the first watch is to cause watchr to refresh when
 directories change. This allows new files to be picked up.  The watch
 pattern matches all files in the current directory tree (though not
-<tt>.</tt> itself), and watches for <tt>:modified</tt> events. It adds
-an extra lambda that is processed while looking at file paths: only
-directories will get watches put on them. (Otherwise <tt>%r(.*)</tt> would put
-watches on every file/directory in the tree, which seems kinda bad.
+<tt>.</tt> itself; probably should), and watches for
+<tt>:modified</tt> events. It adds an extra lambda that is processed
+while looking at file paths: only directories will get watches put on
+them. (Otherwise <tt>%r(.*)</tt> would put watches on every
+file/directory in the tree, which seems kinda bad.)
 
 The second watch looks for HAML files in my public directory and
 automatically converts them to HTML. These are static files, not
-served by an app server like Rails, but even with static files, I hate
+served by an app server like Rails: even with static files, I hate
 writing raw HTML. The extension here is that instead of a single event
 type, I can pass an array. In addition to the <tt>:modified</tt>,
 event, this will get called when watchr notes that a new file of this
@@ -81,8 +82,12 @@ first started, similar to what autotest does.
 
 1. Batch up specs instead of running them individually (not a big deal for jazrb and haml; a big detail for rspec)
 
-1. Integrate upstream (if the want it)
+1. Filter spec runs that run as individual commands so they look like a single command (requires batching)
+
+1. Integrate upstream (if they want it)
 
 1. Move directory watch into watchr itself
 
 1. Handle user interrupt processing more systematically
+
+1. Perhaps add the event type to the watch callback, since multiple events can fire now. But haven't neede this.
