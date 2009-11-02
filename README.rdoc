@@ -41,6 +41,10 @@ to make my <tt>watchr.cnf</tt> work:
   watch( %r((spec/.*[Ss]pec)\.(html|js)$), [ :load, :created, :modified ] ) do |md|
     cmd = "jazrb #{md[0]}"
     puts cmd
+    system cmd
+    if  $?.signaled? && $?.termsig == 2
+      Process.kill 2, 0
+    end
   end
 
 The purpose of the first watch is to cause watchr to refresh when
@@ -69,11 +73,10 @@ first started, similar to what autotest does.
 
 === Things to do
 
-1. Batch up specs instead of running them individually (not a big deal
-for jazrb and haml; a big detail for rspec)
+1. Batch up specs instead of running them individually (not a big deal for jazrb and haml; a big detail for rspec)
 
-1. Integrate upstream (?)
+1. Integrate upstream (if the want it)
 
 1. Move directory watch into watchr itself
 
-1. Handle interrupt processing more systematically
+1. Handle user interrupt processing more systematically
