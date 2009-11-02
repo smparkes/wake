@@ -7,7 +7,7 @@ file-events and has some extensions for how watches can be written.
 
 To install, you can clone the repo (http://github.com/smparkes/watchr)
 or install the gem, <tt>smparkes-watchr</tt>. Note that you'll need my
-copy of EventMachine (git://github.com/smparkes/eventmachine.git or
+copy of EventMachine (http://github.com/smparkes/eventmachine or
 the <tt>smparkes-eventmachine</tt> gem) for directory watches to work
 well. (Hoping these changes will get pulled upstream ...)
 
