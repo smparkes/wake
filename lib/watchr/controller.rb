@@ -60,8 +60,8 @@ module Watchr
     #
     def update(path, event_type = nil)
       path = Pathname(path).expand_path
-
-      if path == @script.path
+      # p path, event_type
+      if path == @script.path && ![ :load, :deleted, :moved ].include?(event_type)
         @script.parse!
         handler.refresh(monitored_paths)
       else
@@ -83,7 +83,7 @@ module Watchr
     #
     def monitored_paths
       paths = Dir['**/*'].select do |path|
-        @script.patterns.any? {|p| path.match(p) }
+        @script.rules.any? {|r| r.match(path) }
       end
       paths.push(@script.path).compact!
       paths.map {|path| Pathname(path).expand_path }

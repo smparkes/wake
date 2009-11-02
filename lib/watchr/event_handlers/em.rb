@@ -25,6 +25,12 @@ module Watchr
           attr_accessor :handler
         end
 
+        def init first_time
+          # p "w", path, first_time,(first_time ? :load : :created)
+          update_reference_times
+          SingleFileWatcher.handler.notify(path, (first_time ? :load : :created) )
+        end
+
         # File's path as a Pathname
         def pathname
           @pathname ||= Pathname(path)
@@ -35,11 +41,13 @@ module Watchr
         end
 
         def file_moved
-p "need to reparse"
+          stop_watching
+          SingleFileWatcher.handler.notify(path, type)
         end
 
         def file_deleted
-          SingleFileWatcher.handler.remove(path)
+          stop_watching
+          SingleFileWatcher.handler.notify(path, type)
         end
 
         # Callback. Called on file change event
@@ -49,13 +57,13 @@ p "need to reparse"
           update_reference_times unless type == :deleted
         end
 
+        private
+
         def update_reference_times
           @reference_atime = pathname.atime
           @reference_mtime = pathname.mtime
           @reference_ctime = pathname.ctime
         end
-
-        private
 
         # Type of latest event.
         #
@@ -79,6 +87,8 @@ p "need to reparse"
       def initialize
         SingleFileWatcher.handler = self
         @old_paths = []
+        @first_time = true
+        @watchers = {}
       end
 
       # Enters listening loop.
@@ -97,6 +107,7 @@ p "need to reparse"
       # will detach all current bindings, and reattach the <tt>monitored_paths</tt>
       #
       def refresh(monitored_paths)
+        @monitored_paths = monitored_paths
         attach
       end
 
@@ -104,14 +115,27 @@ p "need to reparse"
 
       # Binds all <tt>monitored_paths</tt> to the listening loop.
       def attach
-        new_paths = @monitored_paths.uniq - @old_paths
+        @monitored_paths = @monitored_paths.uniq 
+        new_paths = @monitored_paths - @old_paths
+        remove_paths = @old_paths - @monitored_paths
+        # p "want", @monitored_paths
+        # p "old", @old_paths
+        # p "new", new_paths
+        raise "hell" if @monitored_paths.length == 1
         new_paths.each do |path|
           ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
-            p path.to_s
-            watcher.update_reference_times
+            watcher.init @first_time
+            raise "hell" if @watchers[path]
+            @watchers[path] = watcher
           end
         end
+        remove_paths.each do |path|
+          watcher = @watchers[path]
+          raise "hell" if !watcher
+          watcher.stop
+        end
         @old_paths = @monitored_paths
+        @first_time = false
       end
 
       # Unbinds all paths currently attached to listening loop.

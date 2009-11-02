@@ -18,8 +18,15 @@ module Watchr
     #   rule.pattern      #=> 'lib/.*\.rb'
     #   rule.action.call  #=> 'ohaie'
     #
-    Rule = Struct.new(:pattern, :event_type, :action)
+    Rule = Struct.new(:pattern, :event_types, :predicate, :action)
 
+    class Rule
+      def match path
+        ( md = self.pattern.match(path) ) &&
+          ( self.predicate == nil || self.predicate.call(md) )
+      end
+    end
+    
     # TODO eval context
     class API #:nodoc:
     end
@@ -68,8 +75,8 @@ module Watchr
     #
     # ===== Parameters
     # pattern<~#match>:: pattern to match targetted paths
-    # event_type<Symbol>::
-    #   Rule will only match events of this type. Accepted types are :accessed,
+    # event_types<Symbol|Array<Symbol>>::
+    #   Rule will only match events of one of these type. Accepted types are :accessed,
     #   :modified, :changed, :delete and nil (any), where the first three
     #   correspond to atime, mtime and ctime respectively. Defaults to
     #   :modified.
@@ -78,8 +85,9 @@ module Watchr
     # ===== Returns
     # rule<Rule>:: rule created by the method
     #
-    def watch(pattern, event_type = DEFAULT_EVENT_TYPE, &action)
-      @rules << Rule.new(pattern, event_type, action || @default_action)
+    def watch(pattern, event_type = DEFAULT_EVENT_TYPE, predicate  = nil, &action)
+      event_types = Array(event_type)
+      @rules << Rule.new(pattern, event_types, predicate, action || @default_action)
       @rules.last
     end
 
@@ -115,6 +123,16 @@ module Watchr
       Watchr.debug('loading script file %s' % @path.to_s.inspect)
 
       reset
+
+      # Some editors do delete/rename. Even when they don't some events come very fast ...
+      # and editor could do a trunc/write. If you look after the trunc, before the write, well,
+      # things aren't pretty.
+      
+      # Should probably use a watchdog timer that gets reset on every change and then only fire actions
+      # after the watchdog timer fires without get reset ..
+
+      sleep(0.1)
+
       instance_eval(@path.read)
 
     rescue Errno::ENOENT
@@ -139,10 +157,15 @@ module Watchr
     #
     def call_action_for(path, event_type = DEFAULT_EVENT_TYPE)
       path = rel_path(path).to_s
-      rules_for(path).detect do |rule|
-        if rule.event_type.nil? || rule.event_type == event_type
-          data = path.match(rule.pattern)
-          return rule.action.call(data)
+      # p path
+      rules_for(path).each do |rule|
+        # p rule
+        rule.event_types.each do |rule_event_type|
+          # p rule_event_type
+          if ( rule_event_type.nil? && ( event_type != :load ) ) || ( rule_event_type == event_type )
+            data = path.match(rule.pattern)
+            return rule.action.call(data)
+          end
         end
       end
       nil
@@ -156,6 +179,10 @@ module Watchr
     def patterns
       #@rules.every.pattern
       @rules.map {|r| r.pattern }
+    end
+
+    def rules
+      @rules
     end
 
     # Path to the script file
