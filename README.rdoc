@@ -8,15 +8,18 @@ file-events and has some extensions for how watches can be written.
 == EventMachine
 
 Not much to say. It supports EM as well as Rev. The default is still
-Rev. To use EventMachine, after you install the EM gem, I just add
+Rev. To use EventMachine, after installing the EM gem, I just add
 
      begin; require 'watchr/event_handlers/em'; rescue LoadError; end
 
-to my <tt>watchr.cnf</tt>. There may be better ways to do this.
+to my <tt>watchr.cnf</tt>. It'll use the first required backend, or
+Rev if none are (and Rev is installed).  There may be better ways to
+do this.
 
 === Event processing extensions
 
-I made several changes to the way events are created/processed, mostly to make my watchr.cnf work:
+I made several changes to the way events are created/processed, mostly
+to make my <tt>watchr.cnf</tt> work:
 
   #!/usr/bin/env watchr
 
@@ -43,21 +46,21 @@ I made several changes to the way events are created/processed, mostly to make m
 The purpose of the first watch is to cause watchr to refresh when
 directories change. This allows new files to be picked up.  The watch
 pattern matches all files in the current directory tree (though not
-<tt>.</tt> itself), and watches for :modified events. It adds an extra
-lambda that is processed while looking at file paths: only directories
-will get watches put on them. (Otherwise .* would put watches on every
-file/directory in the tree, which seems kinda bad.
+<tt>.</tt> itself), and watches for <tt>:modified</tt> events. It adds
+an extra lambda that is processed while looking at file paths: only
+directories will get watches put on them. (Otherwise <tt>%r(.*)</tt> would put
+watches on every file/directory in the tree, which seems kinda bad.
 
 The second watch looks for HAML files in my public directory and
 automatically converts them to HTML. These are static files, not
-served by an app server like Rails, but even with static files, I
-hate writing raw HTML. The extension here is that instead of a single
-event type, I can pass an array. In addition to the :modified, event,
-this will get called when watchr notes that a new file of this type
-has appeared. (Note this works starting from watchr's first pass;
+served by an app server like Rails, but even with static files, I hate
+writing raw HTML. The extension here is that instead of a single event
+type, I can pass an array. In addition to the <tt>:modified</tt>,
+event, this will get called when watchr notes that a new file of this
+type has appeared. (Note this works starting from watchr's first pass;
 files created while watchr wasn't running don't count).
 
-Then final watch looks for javascript and html spec files and runs
+Then final watch looks for JavaScript and HTML spec files and runs
 them under jazrb (see http://github.com/smparkes/jazrb if
 interested). This case is similar to the previous but also adds the
 <tt>:load</tt> event. This event gets fired the first time a file is
@@ -66,11 +69,11 @@ first started, similar to what autotest does.
 
 === Things to do
 
-# Batch up specs instead of running them individually (not a big deal
-  for jazrb and haml; a big detail for rspec
+1 Batch up specs instead of running them individually (not a big deal
+for jazrb and haml; a big detail for rspec
 
-# Integrate upstream (?)
+1 Integrate upstream (?)
 
-# Move directory watch into watchr itself
+1 Move directory watch into watchr itself
 
-# Handle interrupt processing more systematically
+1 Handle interrupt processing more systematically
