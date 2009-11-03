@@ -42,12 +42,18 @@ module Watchr
         end
 
         def file_moved
+          SingleFileWatcher.handler.forget self, path
           stop_watching
           SingleFileWatcher.handler.notify(path, type)
         end
 
         def file_deleted
+          SingleFileWatcher.handler.forget self, path
           SingleFileWatcher.handler.notify(path, type)
+        end
+
+        def stop
+          stop_watching
         end
 
         private
@@ -89,9 +95,15 @@ module Watchr
       # Will block control flow until application is explicitly stopped/killed.
       #
       def listen(monitored_paths)
-        @monitored_paths = monitored_paths
-        ::EM.run do
-          attach
+        # FIX ... make more generic (handle at a higher level ...)
+        while true
+          @monitored_paths = monitored_paths
+          @old_paths = []
+          @first_time = true
+          @watchers = {}
+          ::EM.run do
+            attach
+          end
         end
       end
 
@@ -102,6 +114,14 @@ module Watchr
       def refresh(monitored_paths)
         @monitored_paths = monitored_paths
         attach
+      end
+
+      def forget connection, path
+        if @watchers[path] != connection
+          $stderr.puts \
+            "warning: no/wrong watcher to forget for #{path}: #{@watchers[path]} vs #{connection}"
+        end
+        @watchers.delete path
       end
 
       private
@@ -116,9 +136,12 @@ module Watchr
         # p "new", new_paths
         raise "hell" if @monitored_paths.length == 1
         new_paths.each do |path|
+          if @watchers[path]
+            $stderr.puts "warning: replacing (ignoring) watcher for #{path}"
+            # @watchers[path].stop
+          end
           ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
             watcher.init @first_time
-            raise "hell" if @watchers[path]
             @watchers[path] = watcher
           end
         end

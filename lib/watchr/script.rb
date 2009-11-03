@@ -133,7 +133,13 @@ module Watchr
       # Should probably use a watchdog timer that gets reset on every change and then only fire actions
       # after the watchdog timer fires without get reset ..
 
-      sleep(0.1)
+      v = nil
+      (1..10).each do
+        old_v = v
+        v = @path.read
+        break if v && v == old_v
+        sleep(0.2)
+      end
 
       instance_eval(@path.read)
 

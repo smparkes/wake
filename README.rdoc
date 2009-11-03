@@ -91,3 +91,5 @@ first started, similar to what autotest does.
 1. Handle user interrupt processing more systematically
 
 1. Perhaps add the event type to the watch callback, since multiple events can fire now. But haven't neede this.
+
+1. Don't swallow config file error messages (particularly on reload)
