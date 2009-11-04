@@ -21,12 +21,32 @@ module Watchr
     Rule = Struct.new(:pattern, :event_types, :predicate, :action)
 
     class Rule
+
+      def watch path
+        watch = nil
+        pattern = self.pattern
+        ( pattern.class == String ) and ( pattern = Regexp.new pattern )
+        md = pattern.match(path)
+        if md
+          watch = self.predicate.nil? || self.predicate.call(md)
+        end
+        return watch
+        self.predicate == nil or begin
+                                   pattern = self.pattern
+                                   ( pattern.class == String ) and ( pattern = Regexp.new pattern )
+                                   md = pattern.match(path)
+                                   !md or self.predicate.call(md)
+                                 end
+      end
+
       def match path
         pattern = self.pattern
         ( pattern.class == String ) and ( pattern = Regexp.new pattern )
+        # p path, pattern, pattern.match(path)
         ( md = pattern.match(path) ) &&
           ( self.predicate == nil || self.predicate.call(md) )
       end
+
     end
     
     # TODO eval context
@@ -138,7 +158,7 @@ module Watchr
         old_v = v
         v = @path.read
         break if v && v == old_v
-        sleep(0.2)
+        sleep(0.3)
       end
 
       instance_eval(@path.read)
@@ -215,6 +235,11 @@ module Watchr
     # rules<Array(Rule)>:: rules corresponding to <tt>path</tt>
     #
     def rules_for(path)
+      @rules.reverse.select do |rule|
+        # p "K", path, rule.pattern, path.match(rule.pattern)
+        path.match(rule.pattern)
+      end
+      # p "KK", path, @rules.reverse.select {|rule| path.match(rule.pattern) }
       @rules.reverse.select {|rule| path.match(rule.pattern) }
     end
 

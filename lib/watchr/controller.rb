@@ -28,7 +28,7 @@ module Watchr
                    end
       @handler
     end
-
+    
     # Creates a controller object around given <tt>script</tt>
     #
     # ===== Parameters
@@ -83,11 +83,22 @@ module Watchr
     #
     def monitored_paths
       paths = Dir['**/*'].select do |path|
-        @script.rules.any? {|r| r.match(path) }
+        watch = false
+        @script.rules.reverse.each do |r|
+          rule_watches = r.watch(path)
+          if false
+            $stderr.print "watch ", path, " ", rule_watches, "\n"
+          end
+          next if rule_watches.nil?
+          watch = rule_watches
+          break
+          break unless r.watch(path)
+          r.match(path)
+        end
+        watch
       end
       paths.push(@script.path).compact!
       paths.map {|path| Pathname(path).expand_path }
     end
   end
 end
-
