@@ -27,8 +27,9 @@ module Watchr
 
         def init first_time
           # p "w", path, first_time,(first_time ? :load : :created)
+          # $stderr.puts "#{signature}: #{pathname}"
           update_reference_times
-          SingleFileWatcher.handler.notify(path, (first_time ? :load : :created) )
+          SingleFileWatcher.handler.notify(pathname, (first_time ? :load : :created) )
         end
 
         # File's path as a Pathname
@@ -37,23 +38,45 @@ module Watchr
         end
 
         def file_modified
-          SingleFileWatcher.handler.notify(path, type)
+          # p "mod", pathname, type
+          SingleFileWatcher.handler.notify(pathname, type)
           update_reference_times
         end
 
         def file_moved
-          SingleFileWatcher.handler.forget self, path
-          stop_watching
-          SingleFileWatcher.handler.notify(path, type)
+          # p "mov", pathname
+          SingleFileWatcher.handler.forget self, pathname
+          begin
+            # $stderr.puts "stop.fm #{signature}: #{pathname}"
+            stop_watching
+          rescue Exception => e
+            $stderr.puts "exception while attempting to stop_watching in file_moved: #{e}"
+          end
+          SingleFileWatcher.handler.notify(pathname, type)
         end
 
         def file_deleted
-          SingleFileWatcher.handler.forget self, path
-          SingleFileWatcher.handler.notify(path, type)
+          # p "del", pathname
+          # $stderr.puts "stop.fd #{signature}: #{pathname} #{type}"
+          SingleFileWatcher.handler.forget self, pathname
+          SingleFileWatcher.handler.notify(pathname, :deleted)
+          if type == :modified
+            # There's a race condition here ... the directory should have gotten mod'ed, but we'll get the
+            # delete after the directory scan, so we won't watch the new file. This isn't the cleanest way to
+            # handle this, but should work for now ...
+            SingleFileWatcher.handler.watch pathname
+          else
+          end
         end
 
         def stop
-          stop_watching
+          #  p "stop", pathname
+          begin
+            # $stderr.puts "stop.s #{signature}: #{pathname}"
+            stop_watching
+          rescue Exception => e
+            $stderr.puts "exception while attempting to stop_watching in stop: #{e}"
+          end
         end
 
         private
@@ -122,12 +145,25 @@ module Watchr
             "warning: no/wrong watcher to forget for #{path}: #{@watchers[path]} vs #{connection}"
         end
         @watchers.delete path
+        raise "hell: #{path}" if !@old_paths.include? Pathname(path)
+        @old_paths.delete Pathname(path)
       end
+
+      def watch path
+        begin
+          ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
+            watcher.init @first_time
+            @watchers[path] = watcher
+          end
+          @old_paths << path
+        rescue ENOENT; end
+      end  
 
       private
 
       # Binds all <tt>monitored_paths</tt> to the listening loop.
       def attach
+        # p "scan"
         @monitored_paths = @monitored_paths.uniq 
         new_paths = @monitored_paths - @old_paths
         remove_paths = @old_paths - @monitored_paths
@@ -138,12 +174,9 @@ module Watchr
         new_paths.each do |path|
           if @watchers[path]
             $stderr.puts "warning: replacing (ignoring) watcher for #{path}"
-            # @watchers[path].stop
+            @watchers[path].stop
           end
-          ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
-            watcher.init @first_time
-            @watchers[path] = watcher
-          end
+          watch path
         end
         remove_paths.each do |path|
           watcher = @watchers[path]
@@ -159,5 +192,6 @@ module Watchr
         @loop.watchers.each {|watcher| watcher.detach }
       end
     end
+
   end
 end
