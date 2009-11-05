@@ -10,6 +10,31 @@ module Watchr
   class Script
     DEFAULT_EVENT_TYPE = :modified
 
+    class Batch
+      def initialize rule
+        @timer = nil
+        @rule = rule
+        @events = []
+      end
+
+      def call data, event
+        if @timer
+          @timer.cancel
+        end
+        @timer = EM::Timer.new(0.001) do
+          deliver
+        end
+        @events << [ data, event ]
+      end
+
+      def deliver
+        events = @events
+        @timer = nil
+        @events = []
+        @rule.action.call [events]
+      end
+    end
+
     # Convenience type. Provides clearer and simpler access to rule properties.
     #
     # ===== Examples
@@ -18,9 +43,18 @@ module Watchr
     #   rule.pattern      #=> 'lib/.*\.rb'
     #   rule.action.call  #=> 'ohaie'
     #
-    Rule = Struct.new(:pattern, :event_types, :predicate, :action)
+    Rule = Struct.new(:pattern, :event_types, :predicate, :options, :action, :batch)
 
     class Rule
+
+      def call data, event
+        if options[:batch]
+          self.batch ||= Batch.new self
+          batch.call data, event
+        else
+          action.call data, event
+        end
+      end
 
       def watch path
         watch = nil
@@ -101,9 +135,9 @@ module Watchr
     # ===== Returns
     # rule<Rule>:: rule created by the method
     #
-    def watch(pattern, event_type = DEFAULT_EVENT_TYPE, predicate  = nil, &action)
+    def watch(pattern, event_type = DEFAULT_EVENT_TYPE, predicate = nil, options = {}, &action)
       event_types = Array(event_type)
-      @rules << Rule.new(pattern, event_types, predicate, action || @default_action)
+      @rules << Rule.new(pattern, event_types, predicate, options, action || @default_action)
       @rules.last
     end
 
@@ -151,7 +185,7 @@ module Watchr
       (1..10).each do
         old_v = v
         v = @path.read
-        break if v && v == old_v
+        break if v != "" && v == old_v
         sleep(0.3)
       end
 
@@ -187,7 +221,7 @@ module Watchr
         types.each do |rule_event_type|
           if ( rule_event_type.nil? && ( event_type != :load ) ) || ( rule_event_type == event_type )
             data = path.match(rule.pattern)
-            return rule.action.call(data, event_type)
+            return rule.call(data, event_type)
           end
         end
       end
