@@ -66,6 +66,10 @@ opts = OptionParser.new do |opts|
     end
   }
 
+  opts.on('-1', '--once', "Run load patterns and then exit") {
+    Watchr.options.once = true
+  }
+
   opts.on_tail('-h', '--help', "Print inline help") { puts opts; exit }
   opts.on_tail('-v', '--version', "Print version" ) { puts Watchr::Bin.version; exit }
 

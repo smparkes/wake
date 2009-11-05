@@ -126,6 +126,12 @@ module Watchr
           @watchers = {}
           ::EM.run do
             attach
+            if Watchr.options.once
+              Watchr.batches.each do |k,v|
+                k.deliver
+              end
+              return 
+            end
           end
         end
       end

@@ -46,8 +46,9 @@ module Watchr
     #--
     # On first use, initialize the options struct and default option values.
     def options
-      @options ||= Struct.new(:debug).new
+      @options ||= Struct.new(:debug,:once).new
       @options.debug ||= false
+      @options.once.nil? and @options.once = false
       @options
     end
 

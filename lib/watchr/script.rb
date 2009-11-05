@@ -1,5 +1,12 @@
 module Watchr
 
+  class << self
+    def batches
+      @batches ||= {}
+    end
+
+  end
+
   # A script object wraps a script file, and is used by a controller.
   #
   # ===== Examples
@@ -23,7 +30,9 @@ module Watchr
         end
         @timer = EM::Timer.new(0.001) do
           deliver
+          Watchr.batches.delete self
         end
+        Watchr.batches[self] = self
         @events << [ data, event ]
       end
 
@@ -52,7 +61,11 @@ module Watchr
           self.batch ||= Batch.new self
           batch.call data, event
         else
-          action.call data, event
+          if action.arity == 1 
+            action.call data
+          else
+            action.call data, event
+          end
         end
       end
 
