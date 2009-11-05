@@ -80,11 +80,11 @@ first started, similar to what autotest does.
 
 === Recent Changes
 
+1. POC for batch events that occur within a time window
+
 1. Pass event type to callbacks
 
 === Things to do
-
-1. Batch up specs instead of running them individually (not a big deal for jazrb and Haml; a big detail for RSpec)
 
 1. Integrate upstream (if they want it)
 
