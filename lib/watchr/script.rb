@@ -31,12 +31,6 @@ module Watchr
           watch = self.predicate.nil? || self.predicate.call(md)
         end
         return watch
-        self.predicate == nil or begin
-                                   pattern = self.pattern
-                                   ( pattern.class == String ) and ( pattern = Regexp.new pattern )
-                                   md = pattern.match(path)
-                                   !md or self.predicate.call(md)
-                                 end
       end
 
       def match path
@@ -193,7 +187,7 @@ module Watchr
         types.each do |rule_event_type|
           if ( rule_event_type.nil? && ( event_type != :load ) ) || ( rule_event_type == event_type )
             data = path.match(rule.pattern)
-            return rule.action.call(data)
+            return rule.action.call(data, event_type)
           end
         end
       end

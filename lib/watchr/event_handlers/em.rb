@@ -156,7 +156,7 @@ module Watchr
             @watchers[path] = watcher
           end
           @old_paths << path
-        rescue ENOENT; end
+        rescue Errno::ENOENT; end
       end  
 
       private

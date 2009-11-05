@@ -25,9 +25,6 @@ module Watchr
   end
 
   class << self
-    attr_accessor :options
-    attr_accessor :handler
-
     # backwards compatibility
     def version #:nodoc:
       Watchr::VERSION

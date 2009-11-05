@@ -92,8 +92,6 @@ module Watchr
           next if rule_watches.nil?
           watch = rule_watches
           break
-          break unless r.watch(path)
-          r.match(path)
         end
         watch
       end

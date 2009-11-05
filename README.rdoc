@@ -78,11 +78,13 @@ interested). This case is similar to the previous but also adds the
 seen after watchr starts. This allows watchr to run all the specs when
 first started, similar to what autotest does.
 
+=== Recent Changes
+
+1. Pass event type to callbacks
+
 === Things to do
 
 1. Batch up specs instead of running them individually (not a big deal for jazrb and Haml; a big detail for RSpec)
-
-1. Filter spec runs that run as individual commands so they look like a single command (requires batching)
 
 1. Integrate upstream (if they want it)
 
@@ -90,12 +92,6 @@ first started, similar to what autotest does.
 
 1. Handle user interrupt processing more systematically
 
-1. Perhaps add the event type to the watch callback, since multiple events can fire now. Could be useful, for example, deleting HTML files generated from Haml files when the Haml files are deleted. Should check to make the file hasn't been manually modified via a hash.
-
 1. Don't swallow config file error messages, particularly on reload. Is this still happening?
 
 1. Implement some kind of dependence detection (probably starting to get into plugin territory)
-
-1. Only blitz HTML files with Haml conversion if they haven't changed, probably via a hash.
-
-1. Don't run html/js paired specs twice on load

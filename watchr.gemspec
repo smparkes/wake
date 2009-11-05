@@ -1,7 +1,7 @@
 
 Gem::Specification.new do |s|
   s.name              = 'smparkes-watchr'
-  s.version           = '0.5.7.4'
+  s.version           = '0.5.7.5'
   s.summary           = "Modern continious testing (flexible alternative to autotest)"
   s.description       = "Modern continious testing (flexible alternative to autotest)."
   s.author            = "mynyml"
