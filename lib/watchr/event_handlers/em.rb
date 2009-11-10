@@ -160,7 +160,7 @@ module Watchr
         @old_paths.delete Pathname(path)
       end
 
-      def watch path, event
+      def watch path, event = nil
         begin
           # p "watch", path, @first_time
           ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
