@@ -25,11 +25,14 @@ module Watchr
           attr_accessor :handler
         end
 
-        def init first_time
+        def init first_time, event
           # p "w", path, first_time,(first_time ? :load : :created)
           # $stderr.puts "#{signature}: #{pathname}"
           update_reference_times
-          SingleFileWatcher.handler.notify(pathname, (first_time ? :load : :created) )
+          # FIX: doesn't pass events
+          if !event
+            SingleFileWatcher.handler.notify(pathname, (first_time ? :load : :created) )
+          end
         end
 
         # File's path as a Pathname
@@ -82,9 +85,11 @@ module Watchr
         private
 
         def update_reference_times
-          @reference_atime = pathname.atime
-          @reference_mtime = pathname.mtime
-          @reference_ctime = pathname.ctime
+          begin
+            @reference_atime = pathname.atime
+            @reference_mtime = pathname.mtime
+            @reference_ctime = pathname.ctime
+          rescue Exception; end
         end
 
         # Type of latest event.
@@ -155,21 +160,31 @@ module Watchr
         @old_paths.delete Pathname(path)
       end
 
-      def watch path
+      def watch path, event
         begin
+          # p "watch", path, @first_time
           ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
-            watcher.init @first_time
+            watcher.init @first_time, event
             @watchers[path] = watcher
           end
           @old_paths << path
-        rescue Errno::ENOENT; end
+        rescue Errno::ENOENT => e
+          $stderr.puts e
+        rescue Exception => e
+          $stderr.puts e
+        end
       end  
+
+      def add path
+        @monitored_paths << path
+        # $stderr.print "add #{path.inspect}\n"
+        attach :dependence
+      end
 
       private
 
       # Binds all <tt>monitored_paths</tt> to the listening loop.
-      def attach
-        # p "scan"
+      def attach event = nil
         @monitored_paths = @monitored_paths.uniq 
         new_paths = @monitored_paths - @old_paths
         remove_paths = @old_paths - @monitored_paths
@@ -182,14 +197,14 @@ module Watchr
             $stderr.puts "warning: replacing (ignoring) watcher for #{path}"
             @watchers[path].stop
           end
-          watch path
+          watch path, event
         end
         remove_paths.each do |path|
           watcher = @watchers[path]
           raise "hell" if !watcher
           watcher.stop
         end
-        @old_paths = @monitored_paths
+        @old_paths = @monitored_paths.dup
         @first_time = false
       end
 

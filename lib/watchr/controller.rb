@@ -24,6 +24,7 @@ module Watchr
                      handler = Watchr.handler.new
                      handler.add_observer self
                      Watchr.debug "using %s handler" % handler.class.name
+                     Script.handler = handler
                      handler
                    end
       @handler
@@ -95,7 +96,16 @@ module Watchr
         end
         watch
       end
+      paths.each do |path|
+        # $stderr.print "lookup #{path}\n"
+        @script.depends_on(path).each do |dependence|
+          # $stderr.print "add #{dependence} for #{path}\n"
+          paths << dependence
+        end
+      end
       paths.push(@script.path).compact!
+      paths.uniq!
+      # $stderr.print "watch #{paths.map {|path| Pathname(path).expand_path }.join(' ')}\n"
       paths.map {|path| Pathname(path).expand_path }
     end
   end

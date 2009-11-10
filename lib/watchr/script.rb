@@ -4,7 +4,6 @@ module Watchr
     def batches
       @batches ||= {}
     end
-
   end
 
   # A script object wraps a script file, and is used by a controller.
@@ -15,7 +14,10 @@ module Watchr
   #   script = Watchr::Script.new(path)
   #
   class Script
+
     DEFAULT_EVENT_TYPE = :modified
+
+    
 
     class Batch
       def initialize rule
@@ -24,7 +26,7 @@ module Watchr
         @events = []
       end
 
-      def call data, event
+      def call data, event, path
         if @timer
           @timer.cancel
         end
@@ -33,7 +35,7 @@ module Watchr
           Watchr.batches.delete self
         end
         Watchr.batches[self] = self
-        @events << [ data, event ]
+        @events << [ data, event, path ]
       end
 
       def deliver
@@ -41,6 +43,9 @@ module Watchr
         @timer = nil
         @events = []
         @rule.action.call [events]
+        events.each do |event|
+          Script.learn event[2]
+        end
       end
     end
 
@@ -56,16 +61,20 @@ module Watchr
 
     class Rule
 
-      def call data, event
+      def call data, event, path
+        # $stderr.print "call #{data} #{event} #{path}\n"
         if options[:batch]
           self.batch ||= Batch.new self
-          batch.call data, event
+          batch.call data, event, path
         else
           if action.arity == 1 
             action.call data
-          else
+          elsif action.arity == 2
             action.call data, event
+          else
+            action.call data, event, path
           end
+          Script.learn path
         end
       end
 
@@ -81,6 +90,7 @@ module Watchr
       end
 
       def match path
+        # $stderr.print("match #{path}\n")
         pattern = self.pattern
         ( pattern.class == String ) and ( pattern = Regexp.new pattern )
         # p path, pattern, pattern.match(path)
@@ -102,6 +112,7 @@ module Watchr
     # path<Pathname>:: the path to the script
     #
     def initialize(path)
+      self.class.script = self
       @path  = path
       @rules = []
       @default_action = lambda {}
@@ -211,6 +222,23 @@ module Watchr
       instance_eval(@path.read)
     end
 
+    class << self
+      attr_accessor :script, :handler
+      def learn path
+        script.depends_on(path).each do |p|
+          handler.add Pathname(p)
+        end
+      end
+    end
+
+    def depends_on path
+      []
+    end
+
+    def depended_on_by path
+      []
+    end
+
     # Find an action corresponding to a path and event type. The returned
     # action is actually a wrapper around the rule's action, with the
     # match_data prepopulated.
@@ -225,16 +253,17 @@ module Watchr
     #   script.action_for('test/test_watchr.rb').call #=> "ruby test/test_watchr.rb"
     #
     def call_action_for(path, event_type = DEFAULT_EVENT_TYPE)
+      # $stderr.print "caf #{path}\n";
+      pathname = path
       path = rel_path(path).to_s
-      # p path
+      depended_on_by(path).each { |dependence| call_action_for(dependence, event_type) }
       rules_for(path).each do |rule|
-        # p rule
         types = rule.event_types
         !types.empty? or types = [ nil ]
         types.each do |rule_event_type|
           if ( rule_event_type.nil? && ( event_type != :load ) ) || ( rule_event_type == event_type )
             data = path.match(rule.pattern)
-            return rule.call(data, event_type)
+            return rule.call(data, event_type, pathname)
           end
         end
       end
@@ -276,12 +305,7 @@ module Watchr
     # rules<Array(Rule)>:: rules corresponding to <tt>path</tt>
     #
     def rules_for(path)
-      @rules.reverse.select do |rule|
-        # p "K", path, rule.pattern, path.match(rule.pattern)
-        path.match(rule.pattern)
-      end
-      # p "KK", path, @rules.reverse.select {|rule| path.match(rule.pattern) }
-      @rules.reverse.select {|rule| path.match(rule.pattern) }
+      @rules.reverse.select do |rule| path.match(rule.pattern) end
     end
 
     # Make a path relative to current working directory.
