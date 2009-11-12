@@ -116,6 +116,7 @@ module Watchr
         @old_paths = []
         @first_time = true
         @watchers = {}
+        @attaching = false
       end
 
       # Enters listening loop.
@@ -185,27 +186,35 @@ module Watchr
 
       # Binds all <tt>monitored_paths</tt> to the listening loop.
       def attach event = nil
-        @monitored_paths = @monitored_paths.uniq 
-        new_paths = @monitored_paths - @old_paths
-        remove_paths = @old_paths - @monitored_paths
-        # p "want", @monitored_paths
-        # p "old", @old_paths
-        # p "new", new_paths
-        raise "hell" if @monitored_paths.length == 1
-        new_paths.each do |path|
-          if @watchers[path]
-            $stderr.puts "warning: replacing (ignoring) watcher for #{path}"
-            @watchers[path].stop
+        return if @attaching
+        @attaching = true
+        new_paths = nil
+        remove_paths = nil
+        begin
+          @monitored_paths = @monitored_paths.uniq 
+          new_paths = @monitored_paths - @old_paths
+          remove_paths = @old_paths - @monitored_paths
+          # p "want", @monitored_paths
+          # p "old", @old_paths
+          # p "new", new_paths
+          raise "hell" if @monitored_paths.length == 1
+          new_paths.each do |path|
+            if @watchers[path]
+              $stderr.puts "warning: replacing (ignoring) watcher for #{path}"
+              @watchers[path].stop
+            end
+            watch path, event
           end
-          watch path, event
-        end
-        remove_paths.each do |path|
-          watcher = @watchers[path]
-          raise "hell" if !watcher
-          watcher.stop
-        end
-        @old_paths = @monitored_paths.dup
+          remove_paths.each do |path|
+            watcher = @watchers[path]
+            watcher.stop if watcher
+            @watchers.delete path
+          end
+          @old_paths = @monitored_paths.dup
+          # $stderr.print "#{new_paths} #{remove_paths}\n";
+        end while !new_paths.empty? and !remove_paths.empty?
         @first_time = false
+        @attaching = false
       end
 
       # Unbinds all paths currently attached to listening loop.
