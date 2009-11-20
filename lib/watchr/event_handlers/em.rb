@@ -177,6 +177,10 @@ module Watchr
       end  
 
       def add path
+        # $stderr.print  "new #{path}\n"
+        if false && !@monitored_paths.include?( path )
+          $stderr.print "new #{path}\n"
+        end
         @monitored_paths << path
         # $stderr.print "add #{path.inspect}\n"
         attach :dependence

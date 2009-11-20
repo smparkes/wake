@@ -27,6 +27,7 @@ module Watchr
       end
 
       def call data, event, path
+        # $stderr.print "batch add #{data} #{event} #{path}\n"
         if @timer
           @timer.cancel
         end
@@ -35,7 +36,10 @@ module Watchr
           Watchr.batches.delete self
         end
         Watchr.batches[self] = self
-        @events << [ data, event, path ]
+        # p data, event, path
+        @events << [ data.to_a, event, path ]
+        @events.uniq!
+        # p @events
       end
 
       def deliver
@@ -226,6 +230,7 @@ module Watchr
       attr_accessor :script, :handler
       def learn path
         script.depends_on(path).each do |p|
+          # $stderr.print "#{path} depends on #{p}\n"
           handler.add Pathname(p)
         end
       end
@@ -253,20 +258,29 @@ module Watchr
     #   script.action_for('test/test_watchr.rb').call #=> "ruby test/test_watchr.rb"
     #
     def call_action_for(path, event_type = DEFAULT_EVENT_TYPE)
-      # $stderr.print "caf #{path}\n";
+      # $stderr.print "caf #{path} #{event_type}\n";
       pathname = path
       path = rel_path(path).to_s
-      depended_on_by(path).each { |dependence| call_action_for(dependence, event_type) }
+      # $stderr.print "dob #{path} #{depended_on_by(path).join(' ')}\n"
+      depended_on_by(Pathname(pathname).realpath.to_s).each do |dependence|
+        # $stderr.print "for caf #{Pathname(pathname).realpath.to_s}\n";
+        call_action_for(dependence, event_type)
+      end
       rules_for(path).each do |rule|
+        # begin
         types = rule.event_types
         !types.empty? or types = [ nil ]
         types.each do |rule_event_type|
+          # $stderr.print "#{rule.inspect} #{rule_event_type.inspect} #{event_type.inspect} #{path} #{rule_event_type == event_type}\n"
           if ( rule_event_type.nil? && ( event_type != :load ) ) || ( rule_event_type == event_type )
             data = path.match(rule.pattern)
+            # $stderr.print "data #{data}\n"
             return rule.call(data, event_type, pathname)
           end
         end
+        # rescue Exception => e; $stderr.print "oops #{e}\n"; raise; end
       end
+      # $stderr.print "no path for #{path}\n"
       nil
     end
 
