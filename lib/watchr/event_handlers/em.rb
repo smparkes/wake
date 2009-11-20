@@ -1,6 +1,7 @@
 require "eventmachine"
 
 require 'watchr/event_handlers/unix'
+require 'watchr/event_handlers/base'
 
 module Watchr
   module EventHandler
