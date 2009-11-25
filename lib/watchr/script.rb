@@ -262,7 +262,11 @@ module Watchr
       pathname = path
       path = rel_path(path).to_s
       # $stderr.print "dob #{path} #{depended_on_by(path).join(' ')}\n"
-      depended_on_by(Pathname(pathname).realpath.to_s).each do |dependence|
+      string = nil
+      begin
+        string = Pathname(pathname).realpath.to_s
+      rescue Errno::ENOENT; end
+      string && depended_on_by(string).each do |dependence|
         # $stderr.print "for caf #{Pathname(pathname).realpath.to_s}\n";
         call_action_for(dependence, event_type)
       end
