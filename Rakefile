@@ -7,7 +7,7 @@ end
 desc "Generate rdoc documentation."
 Rake::RDocTask.new(:rdoc => 'rdoc', :clobber_rdoc => 'rdoc:clean', :rerdoc => 'rdoc:force') { |rdoc|
   rdoc.rdoc_dir = 'doc/rdoc'
-  rdoc.title    = "Watchr"
+  rdoc.title    = "Wake"
   rdoc.options << '--line-numbers' << '--inline-source'
   rdoc.options << '--charset' << 'utf-8'
   rdoc.main = 'README.rdoc'

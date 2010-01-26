@@ -1,9 +1,9 @@
 require 'rubygems'
 require 'fsdb'
 
-require 'watchr/script'
+require 'wake/script'
 
-class Watchr::Script
+class Wake::Script
 
   remove_method :depends_on, :depended_on_by
 

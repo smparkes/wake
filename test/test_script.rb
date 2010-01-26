@@ -1,7 +1,7 @@
 require 'test/test_helper'
 
 class TestScript < Test::Unit::TestCase
-  include Watchr
+  include Wake
 
   def setup
     tmpfile = Tempfile.new('foo')

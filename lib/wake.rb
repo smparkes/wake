@@ -8,26 +8,27 @@ require 'rbconfig'
 # Usage:
 #
 #   # on command line, from project's root dir
-#   $ watchr path/to/script
+#   $ wake path/to/script
+#   # default script if none is given is Wakefile.
 #
 # See README for more details
 #
-module Watchr
-  VERSION = '0.5.7'
+module Wake
+  VERSION = '0.1.0'
 
-  autoload :Script,     'watchr/script'
-  autoload :Controller, 'watchr/controller'
+  autoload :Script,     'wake/script'
+  autoload :Controller, 'wake/controller'
 
   module EventHandler
-    autoload :Base,     'watchr/event_handlers/base'
-    autoload :Unix,     'watchr/event_handlers/unix'
-    autoload :Portable, 'watchr/event_handlers/portable'
+    autoload :Base,     'wake/event_handlers/base'
+    autoload :Unix,     'wake/event_handlers/unix'
+    autoload :Portable, 'wake/event_handlers/portable'
   end
 
   class << self
     # backwards compatibility
     def version #:nodoc:
-      Watchr::VERSION
+      Wake::VERSION
     end
 
     # Options proxy.
@@ -37,8 +38,8 @@ module Watchr
     #
     # ===== Examples
     #
-    #   Watchr.options.debug #=> false
-    #   Watchr.options.debug = true
+    #   Wake.options.debug #=> false
+    #   Wake.options.debug = true
     #
     # ===== Returns
     # options<Struct>:: options proxy.
@@ -46,23 +47,27 @@ module Watchr
     #--
     # On first use, initialize the options struct and default option values.
     def options
-      @options ||= Struct.new(:debug,:once).new
+      @options ||= Struct.new(:debug,:once, :wakefile).new
       @options.debug ||= false
       @options.once.nil? and @options.once = false
       @options
+    end
+
+    def options= arg
+      @options = arg
     end
 
     # Outputs formatted debug statement to stdout, only if ::options.debug is true
     #
     # ===== Examples
     #
-    #   Watchr.options.debug = true
-    #   Watchr.debug('im in ur codes, notifayinin u')
+    #   Wake.options.debug = true
+    #   Wake.debug('im in ur codes, notifayinin u')
     #
-    # outputs: "[watchr debug] im in ur codes, notifayinin u"
+    # outputs: "[wake debug] im in ur codes, notifayinin u"
     #
     def debug(str)
-      puts "[watchr debug] #{str}" if options.debug
+      puts "[wake debug] #{str}" if options.debug
     end
 
     # Detect current OS and return appropriate handler.
@@ -70,16 +75,16 @@ module Watchr
     # ===== Examples
     #
     #   Config::CONFIG['host_os'] #=> 'linux-gnu'
-    #   Watchr.handler #=> Watchr::EventHandler::Unix
+    #   Wake.handler #=> Wake::EventHandler::Unix
     #
     #   Config::CONFIG['host_os'] #=> 'cygwin'
-    #   Watchr.handler #=> Watchr::EventHandler::Portable
+    #   Wake.handler #=> Wake::EventHandler::Portable
     #
     #   ENV['HANDLER'] #=> 'unix'
-    #   Watchr.handler #=> Watchr::EventHandler::Unix
+    #   Wake.handler #=> Wake::EventHandler::Unix
     #
     #   ENV['HANDLER'] #=> 'portable'
-    #   Watchr.handler #=> Watchr::EventHandler::Portable
+    #   Wake.handler #=> Wake::EventHandler::Portable
     #
     # ===== Returns
     # handler<Class>:: handler class for current architecture
@@ -88,12 +93,17 @@ module Watchr
       @handler ||=
         case ENV['HANDLER'] || Config::CONFIG['host_os']
           when /mswin|windows|cygwin/i
-            Watchr::EventHandler::Portable
+            Wake::EventHandler::Portable
           when /sunos|solaris|darwin|mach|osx|bsd|linux/i, 'unix'
-            Watchr::EventHandler::Unix.default
+            Wake::EventHandler::Unix.default
           else
-            Watchr::EventHandler::Portable
+            Wake::EventHandler::Portable
         end
     end
+    
+    def handler= arg
+      @handler = arg
+    end
+
   end
 end

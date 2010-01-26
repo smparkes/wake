@@ -1,4 +1,4 @@
-module Watchr
+module Wake
 
   class << self
     def batches
@@ -10,8 +10,8 @@ module Watchr
   #
   # ===== Examples
   #
-  #   path   = Pathname.new('specs.watchr')
-  #   script = Watchr::Script.new(path)
+  #   path   = Pathname.new('specs.wk')
+  #   script = Wake::Script.new(path)
   #
   class Script
 
@@ -33,9 +33,9 @@ module Watchr
         end
         @timer = EM::Timer.new(0.001) do
           deliver
-          Watchr.batches.delete self
+          Wake.batches.delete self
         end
-        Watchr.batches[self] = self
+        Wake.batches[self] = self
         # p data, event, path
         @events << [ data.to_a, event, path ]
         @events.uniq!
@@ -71,14 +71,16 @@ module Watchr
           self.batch ||= Batch.new self
           batch.call data, event, path
         else
+          res = nil
           if action.arity == 1 
-            action.call data
+            res = action.call data
           elsif action.arity == 2
-            action.call data, event
+            res = action.call data, event
           else
-            action.call data, event, path
+            res = action.call data, event, path
           end
           Script.learn path
+          res
         end
       end
 
@@ -147,7 +149,7 @@ module Watchr
     #   watch( 'test/test_.*\.rb' )  {|md| system("ruby #{md[0]}") }
     #   watch( 'lib/(.*)\.rb' )      {|md| system("ruby test/test_#{md[1]}.rb") }
     #
-    # With these two rules, watchr will run any test file whenever it is itself
+    # With these two rules, wake will run any test file whenever it is itself
     # changed (first rule), and will also run a corresponding test file
     # whenever a lib file is changed (second rule).
     #
@@ -198,7 +200,7 @@ module Watchr
     #--
     # TODO fix script file not found error
     def parse!
-      Watchr.debug('loading script file %s' % @path.to_s.inspect)
+      Wake.debug('loading script file %s' % @path.to_s.inspect)
 
       reset
 
@@ -221,7 +223,7 @@ module Watchr
 
     rescue Errno::ENOENT
       # TODO figure out why this is happening. still can't reproduce
-      Watchr.debug('script file "not found". wth')
+      Wake.debug('script file "not found". wth')
       sleep(0.3) #enough?
       instance_eval(@path.read)
     end
@@ -255,7 +257,7 @@ module Watchr
     # ===== Examples
     #
     #   script.watch( 'test/test_.*\.rb' ) {|md| "ruby #{md[0]}" }
-    #   script.action_for('test/test_watchr.rb').call #=> "ruby test/test_watchr.rb"
+    #   script.action_for('test/test_wake.rb').call #=> "ruby test/test_wake.rb"
     #
     def call_action_for(path, event_type = DEFAULT_EVENT_TYPE)
       # $stderr.print "caf #{path} #{event_type}\n";

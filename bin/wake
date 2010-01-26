@@ -5,19 +5,19 @@ $VERBOSE = true
 require 'pathname'
 require 'optparse'
 
-require 'watchr'
+require 'wake'
 
-module Watchr
+module Wake
   # Namespaced to avoid defining global methods
   module Bin #:nodoc:
     extend self
 
     def usage
-      "Usage: watchr [opts] path/to/script"
+      "Usage: wake [opts] [path/to/script]"
     end
 
     def version
-      "watchr version: %s" % Watchr::VERSION
+      "wake version: %s" % Wake::VERSION
     end
 
     # Find a partial path name in load path
@@ -30,7 +30,7 @@ module Watchr
     #   absolute path of first occurence of partial path in load path, or nil if not found
     #
     def find_in_load_path(path)
-      dir = potentially_with_gem( path.basename('.watchr') ) do
+      dir = potentially_with_gem( path.basename('.wk') ) do
         $LOAD_PATH.detect {|p| Pathname(p).join(path).exist? }
       end
       dir ? path.expand_path(dir) : nil
@@ -56,10 +56,10 @@ module Watchr
 end
 
 opts = OptionParser.new do |opts|
-  opts.banner = Watchr::Bin.usage
+  opts.banner = Wake::Bin.usage
 
   opts.on('-d', '--debug', "Print extra debug info while program runs") {
-    Watchr.options.debug = true
+    Wake.options.debug = true
     begin
       require 'ruby-debug'
     rescue LoadError, RuntimeError
@@ -67,17 +67,22 @@ opts = OptionParser.new do |opts|
   }
 
   opts.on('-1', '--once', "Run load patterns and then exit") {
-    Watchr.options.once = true
+    Wake.options.once = true
+  }
+
+  opts.on('-f', '--wakefile FILE', "use wakefile FILE") { |file|
+    Wake.options.wakefile = file
   }
 
   opts.on_tail('-h', '--help', "Print inline help") { puts opts; exit }
-  opts.on_tail('-v', '--version', "Print version" ) { puts Watchr::Bin.version; exit }
+  opts.on_tail('-v', '--version', "Print version" ) { puts Wake::Bin.version; exit }
 
   opts.parse! ARGV
 end
 
-relative_path = Pathname( ARGV.first )                   rescue abort(Watchr::Bin.usage)
-absolute_path = Watchr::Bin.find_in_load_path(relative_path) or abort("no script found; file #{relative_path.to_s.inspect} is not in path.")
+path = Wake.options.wakefile || "Wakefile"
+relative_path = Pathname( path ) rescue abort(Wake::Bin.usage)
+absolute_path = Wake::Bin.find_in_load_path(relative_path) or abort("no script found; file #{relative_path.to_s.inspect} is not in path.")
 
-Watchr::Controller.new(Watchr::Script.new(absolute_path)).run
+Wake::Controller.new(Wake::Script.new(absolute_path)).run
 

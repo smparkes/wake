@@ -1,6 +1,6 @@
 # Run me with:
 #
-#   $ watchr docs.watchr
+#   $ wake -f docs.wk
 
 def run_rdoc
   system('rake --silent rdoc')

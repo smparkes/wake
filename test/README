@@ -1,11 +1,11 @@
 
-To use local watchr executable for dev work:
+To use local wake executable for dev work:
 
-  $ ruby -rubygems -Ilib ./bin/watchr -d specs.watchr
+  $ ruby -rubygems -Ilib ./bin/wake -d specs.wk
 
 To force a specific handler:
 
-  $ HANDLER=protable watchr -d specs.watchr
-  $ HANDLER=unix watchr -d specs.watchr
+  $ HANDLER=protable wake -d specs.wk
+  $ HANDLER=unix wake -d specs.wk
 
-  (see Watchr.handler)
+  (see Wake.handler)

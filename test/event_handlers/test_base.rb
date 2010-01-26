@@ -3,7 +3,7 @@ require 'test/test_helper'
 class BaseEventHandlerTest < Test::Unit::TestCase
 
   class Handler
-    include Watchr::EventHandler::Base
+    include Wake::EventHandler::Base
   end
 
   def setup

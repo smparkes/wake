@@ -1,11 +1,11 @@
 require 'test/test_helper'
 
-class Watchr::EventHandler::Portable
+class Wake::EventHandler::Portable
   attr_accessor :monitored_paths
 end
 
 class PortableEventHandlerTest < Test::Unit::TestCase
-  include Watchr
+  include Wake
 
   def setup
     @handler = EventHandler::Portable.new

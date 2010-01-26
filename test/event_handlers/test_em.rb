@@ -2,12 +2,12 @@ require 'test/test_helper'
 
 if false && HAVE_EM
 
-class Watchr::EventHandler::Unix::SingleFileWatcher
+class Wake::EventHandler::Unix::SingleFileWatcher
   public :type
 end
 
 class UnixEventHandlerTest < Test::Unit::TestCase
-  include Watchr
+  include Wake
 
   SingleFileWatcher = EventHandler::Unix::SingleFileWatcher
 
@@ -159,4 +159,4 @@ class UnixEventHandlerTest < Test::Unit::TestCase
   end
 end
 
-end  # if Watchr::HAVE_EM
+end  # if Wake::HAVE_EM

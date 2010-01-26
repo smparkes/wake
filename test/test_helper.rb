@@ -16,7 +16,7 @@ end
 root = Pathname(__FILE__).dirname.parent.expand_path
 $:.unshift(root.join('lib').to_s).uniq!
 
-require 'watchr'
+require 'wake'
 
 class Test::Unit::TestCase
   class << self
@@ -52,7 +52,7 @@ ensure
 end
 
 begin
-  require "watchr/event_handlers/rev"
+  require "wake/event_handlers/rev"
   HAVE_REV = true
 rescue LoadError
   HAVE_REV = false

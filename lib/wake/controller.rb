@@ -1,4 +1,4 @@
-module Watchr
+module Wake
 
   class Refresh < Exception; end
 
@@ -6,8 +6,8 @@ module Watchr
   #
   # ===== Examples
   #
-  #   script = Watchr::Script.new(file)
-  #   contrl = Watchr::Controller.new(script)
+  #   script = Wake::Script.new(file)
+  #   contrl = Wake::Controller.new(script)
   #   contrl.run
   #
   # Calling <tt>#run</tt> will enter the listening loop, and from then on every
@@ -21,9 +21,9 @@ module Watchr
 
     def handler
       @handler ||= begin
-                     handler = Watchr.handler.new
+                     handler = Wake.handler.new
                      handler.add_observer self
-                     Watchr.debug "using %s handler" % handler.class.name
+                     Wake.debug "using %s handler" % handler.class.name
                      Script.handler = handler
                      handler
                    end

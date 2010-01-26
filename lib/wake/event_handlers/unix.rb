@@ -1,4 +1,4 @@
-module Watchr
+module Wake
   module EventHandler
     module Unix
     
@@ -9,11 +9,11 @@ module Watchr
 
         def default
           defaults.empty? &&
-            begin; require( 'watchr/event_handlers/rev' );
+            begin; require( 'wake/event_handlers/rev' );
             rescue LoadError => e; end
           defaults.empty? &&
-            begin require( 'watchr/event_handlers/portable' );
-              defaults << Watchr::EventHandler::Portable;
+            begin require( 'wake/event_handlers/portable' );
+              defaults << Wake::EventHandler::Portable;
             end
           defaults[0]
         end

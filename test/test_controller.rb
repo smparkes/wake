@@ -8,7 +8,7 @@ class MockHandler
 end
 
 class TestController < Test::Unit::TestCase
-  include Watchr
+  include Wake
 
   def to_p(str)
     Pathname(str).expand_path
@@ -18,7 +18,7 @@ class TestController < Test::Unit::TestCase
     tmpfile     = Tempfile.new('foo')
     @script     = Script.new( Pathname.new( tmpfile.path ) )
     @handler    = MockHandler.new
-    Watchr.stubs(:handler).returns(MockHandler)
+    Wake.stubs(:handler).returns(MockHandler)
     MockHandler.stubs(:new).returns(@handler)
     @controller = Controller.new(@script)
   end
@@ -113,7 +113,7 @@ class TestController < Test::Unit::TestCase
     @script.stubs(:path).returns(path)
 
     file = to_p('012')
-    @script.expects(:call_action_for).with(file,nil).raises(Watchr::Refresh)
+    @script.expects(:call_action_for).with(file,nil).raises(Wake::Refresh)
 
     @controller.stubs(:monitored_paths).returns %w( foo bar )
 

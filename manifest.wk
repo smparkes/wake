@@ -1,6 +1,6 @@
 # Run me with:
 #
-#   $ watchr manifest.watchr
+#   $ wake -f manifest.wk
 #
 # This script will remove a file from from the Manifest when it gets deleted,
 # and will rebuild the Manifest on Ctrl-\
@@ -49,7 +49,7 @@ end
 @manifest = Manifest.new('Manifest')
 
 # --------------------------------------------------
-# Watchr Rules
+# Wake Rules
 # --------------------------------------------------
 watch('.*', :deleted ) do |md|
   @manifest.remove(md[0])

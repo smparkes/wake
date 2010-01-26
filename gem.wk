@@ -1,20 +1,20 @@
 # Run me with:
 #
-#   $ watchr gem.watchr
+#   $ wake gem.wk
 
 # --------------------------------------------------
 # Convenience Methods
 # --------------------------------------------------
 def build(gemspec)
   system "gem build %s" % gemspec
-  FileUtils.mv Dir['watchr-*.gem'], 'pkg/'
+  FileUtils.mv Dir['wake-*.gem'], 'pkg/'
   puts
 end
 
 # --------------------------------------------------
-# Watchr Rules
+# Wake Rules
 # --------------------------------------------------
-watch( '^watchr.gemspec$' ) { |m| build m[0] }
+watch( '^wake.gemspec$' ) { |m| build m[0] }
 
 # --------------------------------------------------
 # Signal Handling
@@ -22,7 +22,7 @@ watch( '^watchr.gemspec$' ) { |m| build m[0] }
 # Ctrl-\
 Signal.trap('QUIT') do
   puts " --- Building Gem ---\n\n"
-  build 'watchr.gemspec'
+  build 'wake.gemspec'
 end
 
 # Ctrl-C

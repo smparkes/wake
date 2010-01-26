@@ -1,13 +1,13 @@
 require "eventmachine"
 
-require 'watchr/event_handlers/unix'
-require 'watchr/event_handlers/base'
+require 'wake/event_handlers/unix'
+require 'wake/event_handlers/base'
 
-module Watchr
+module Wake
   module EventHandler
     class EM
 
-      Watchr::EventHandler::Unix.defaults << self
+      Wake::EventHandler::Unix.defaults << self
       
       ::EM.kqueue = true if ::EM.kqueue?
       
@@ -133,8 +133,8 @@ module Watchr
           @watchers = {}
           ::EM.run do
             attach
-            if Watchr.options.once
-              Watchr.batches.each do |k,v|
+            if Wake.options.once
+              Wake.batches.each do |k,v|
                 k.deliver
               end
               return 

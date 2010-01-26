@@ -1,12 +1,12 @@
 require "rev"
 
-require 'watchr/event_handlers/unix'
+require 'wake/event_handlers/unix'
 
-module Watchr
+module Wake
   module EventHandler
     class Rev
       
-      Watchr::EventHandler::Unix.defaults << self
+      Wake::EventHandler::Unix.defaults << self
 
       include Base
 

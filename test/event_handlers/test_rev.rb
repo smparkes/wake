@@ -2,12 +2,12 @@ require 'test/test_helper'
 
 if HAVE_REV
 
-class Watchr::EventHandler::Rev::SingleFileWatcher
+class Wake::EventHandler::Rev::SingleFileWatcher
   public :type
 end
 
 class RevEventHandlerTest < Test::Unit::TestCase
-  include Watchr
+  include Wake
 
   SingleFileWatcher = EventHandler::Rev::SingleFileWatcher
 

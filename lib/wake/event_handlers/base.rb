@@ -1,6 +1,6 @@
 require 'observer'
 
-module Watchr
+module Wake
   module EventHandler
     class AbstractMethod < Exception #:nodoc:
     end

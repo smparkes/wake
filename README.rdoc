@@ -1,38 +1,46 @@
 === Summary
 
-This is a fork of the Watchr gem at http://github.com/mynyml/watchr.
+The vision for wake is as a sort of rake/make like program, combined
+with the real-time filesystem "watching" aspect of autotest/autospec/watchr.
 
-The are a number of differences. It's been ported to EventMachine for
-file-events and has some extensions for how watches can be written.
+Wake started out (and still is) mostly a fork of the watchr gem at
+http://github.com/mynyml/watchr.
 
-To install, you can clone the repo (http://github.com/smparkes/watchr)
-or install the gem, <tt>smparkes-watchr</tt>. Note that you'll need my
-copy of EventMachine (http://github.com/smparkes/eventmachine or
-the <tt>smparkes-eventmachine</tt> gem) for directory watches to work
-well. (Hoping these changes will get pulled upstream ...)
+The are a number of differences now and they're expected to grow.
+
+It's been ported to EventMachine for file-events and has some
+extensions for how watches can be written.
+
+To install, you can clone the repo (http://github.com/smparkes/wake)
+or install the gem, <tt>wake</tt>. Note that for now, you'll need my
+copy of EventMachine (http://github.com/smparkes/eventmachine or the
+<tt>smparkes-eventmachine</tt> gem) for directory watches to work
+well. (These changes are in the process of getting pulled upstream.)
 
 == EventMachine
 
-Not much to say. It supports EM as well as Rev. The default is still
-Rev. To use EventMachine, after installing the EM gem, I just add
+Not much to say. It supports EM as well as Rev, though the Rev stuff
+will probably be dropped unles there's a compelling reason to keep
+it. The default is still Rev. To use EventMachine, after installing
+the EM gem, I just add
 
-     begin; require 'watchr/event_handlers/em'; rescue LoadError; end
+     begin; require 'wake/event_handlers/em'; rescue LoadError; end
 
-to my <tt>watchr.cnf</tt>. It'll use the first required backend, or
+to my <tt>Wakefile</tt>. It'll use the first required backend, or
 Rev if none are found (and Rev is installed).  There may be better ways to
 do this.
 
 === Event processing extensions
 
 I made several changes to the way events are created/processed, mostly
-to make my <tt>watchr.cnf</tt> work:
+to make my <tt>Wakefile</tt> work:
 
-  #!/usr/bin/env watchr
+  #!/usr/bin/env wake
 
-  begin; require 'watchr/event_handlers/em'; rescue LoadError; end
+  begin; require 'wake/event_handlers/em'; rescue LoadError; end
 
   watch( %r(.*), :modified, lambda { |md| File.directory? md[0] } ) do |md|
-    raise Watchr::Refresh
+    raise Wake::Refresh
   end
 
   watch( %r((public/.*)\.haml$), [ :created, :modified ] ) do |md|
@@ -53,7 +61,7 @@ to make my <tt>watchr.cnf</tt> work:
     end
   end
 
-The purpose of the first watch is to cause watchr to refresh when
+The purpose of the first watch is to cause wake to refresh when
 directories change. This allows new files to be picked up.  The watch
 pattern matches all files in the current directory tree (though not
 <tt>.</tt> itself; probably should), and watches for
@@ -65,17 +73,17 @@ file/directory in the tree, which seems kinda bad.)
 The second watch looks for Haml files in my public directory and
 automatically converts them to HTML. These are static files, not
 served by an app server like Rails: even with static files, I hate
-writing raw HTML. The extension here is that instead of a single event
+writing raw HTML. The extension here is so that instead of a single event
 type, I can pass an array. In addition to the <tt>:modified</tt>,
-event, this will get called when watchr notes that a new file of this
-type has appeared. (Note this works starting from watchr's first pass;
-files created while watchr wasn't running don't count).
+event, this will get called when wake notes that a new file of this
+type has appeared. (Note this works starting from wake's first pass;
+files created while wake wasn't running don't count).
 
 Then final watch looks for JavaScript and HTML spec files and runs
 them under jazrb (see http://github.com/smparkes/jazrb if
 interested). This case is similar to the previous but also adds the
 <tt>:load</tt> event. This event gets fired the first time a file is
-seen after watchr starts. This allows watchr to run all the specs when
+seen after wake starts. This allows wake to run all the specs when
 first started, similar to what autotest does.
 
 === Recent Changes
@@ -84,14 +92,14 @@ first started, similar to what autotest does.
 
 1. Pass event type to callbacks
 
+1. Has some POC dependency detection. Needs to be formalized into an API and have a better backend.
+
 === Things to do
 
-1. Integrate upstream (if they want it)
-
-1. Move directory watch into watchr itself
+1. Move directory watch into wake itself
 
 1. Handle user interrupt processing more systematically
 
 1. Don't swallow config file error messages, particularly on reload. Is this still happening?
 
-1. Implement some kind of dependence detection (probably starting to get into plugin territory)
+1. Integrate with rake/make.
