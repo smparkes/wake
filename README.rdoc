@@ -17,7 +17,7 @@ copy of EventMachine (http://github.com/smparkes/eventmachine or the
 <tt>smparkes-eventmachine</tt> gem) for directory watches to work
 well. (These changes are in the process of getting pulled upstream.)
 
-Discussions at http://groups.google.com/group/wakegem and #wake at freenode.
+Discussions at http://groups.google.com/group/wake-talk and #wake at freenode.
 
 == EventMachine
 
