@@ -1,0 +1,4 @@
+class << self
+  def sass *args
+  end
+end

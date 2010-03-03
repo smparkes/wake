@@ -1,0 +1,11 @@
+class Wake::Directory < Wake::Plugin
+  extend Wake::Plugin::Class
+  def watcher
+    default = super
+    lambda { |path, graph| File.directory? path and default.call(path, graph) }
+  end
+end
+
+# Local Variables:
+# mode:ruby
+# End:

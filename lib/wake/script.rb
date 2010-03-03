@@ -1,3 +1,6 @@
+require 'wake/target'
+require 'wake/plugin'
+
 module Wake
 
   class << self
@@ -17,8 +20,6 @@ module Wake
 
     DEFAULT_EVENT_TYPE = :modified
 
-    
-
     class Batch
       def initialize rule
         @timer = nil
@@ -28,6 +29,8 @@ module Wake
 
       def call data, event, path
         # $stderr.print "batch add #{data} #{event} #{path}\n"
+        # require 'pp'
+        # pp caller(0)
         if @timer
           @timer.cancel
         end
@@ -87,8 +90,17 @@ module Wake
       def watch path
         watch = nil
         pattern = self.pattern
+        if Array === pattern
+          if String === pattern[0]
+            @set = Dir[pattern.shift]
+          end
+          pattern = pattern.shift || /.*/
+        end
         ( pattern.class == String ) and ( pattern = Regexp.new pattern )
-        md = pattern.match(path)
+        if @set
+          return nil if !@set.include? path
+        end
+        md = pattern ? pattern.match(path) : path
         if md
           watch = self.predicate.nil? || self.predicate.call(md)
         end
@@ -96,12 +108,22 @@ module Wake
       end
 
       def match path
-        # $stderr.print("match #{path}\n")
         pattern = self.pattern
+        if Array === pattern
+          if String === pattern[0]
+            @set = Dir[pattern.shift]
+          end
+          pattern = pattern.shift || /.*/
+        end
         ( pattern.class == String ) and ( pattern = Regexp.new pattern )
+        if @set
+          return nil if !@set.include? path
+        end
         # p path, pattern, pattern.match(path)
-        ( md = pattern.match(path) ) &&
+        md = pattern ? pattern.match(path) : path
+        if md 
           ( self.predicate == nil || self.predicate.call(md) )
+        end
       end
 
     end
@@ -122,6 +144,8 @@ module Wake
       @path  = path
       @rules = []
       @default_action = lambda {}
+      ignore %r{^/?\..+}
+      directory
     end
 
     # Main script API method. Builds a new rule, binding a pattern to an action.
@@ -219,13 +243,16 @@ module Wake
         sleep(0.3)
       end
 
-      instance_eval(@path.read)
+      instance_eval(@path.read, @path)
+
+      # require 'pp'
+      # pp caller(0)
 
     rescue Errno::ENOENT
       # TODO figure out why this is happening. still can't reproduce
       Wake.debug('script file "not found". wth')
       sleep(0.3) #enough?
-      instance_eval(@path.read)
+      instance_eval(@path.read, @path)
     end
 
     class << self
@@ -313,6 +340,29 @@ module Wake
       Pathname(@path.respond_to?(:to_path) ? @path.to_path : @path.to_s).expand_path
     end
 
+    def method_missing *args
+      method = args.shift.to_s
+      begin
+        require method
+      rescue LoadError; end
+
+      filename = File.join method, "wake.wk"
+
+      file = $:.map { |dir| File.join dir, filename }.detect { |f| File.exists? f }
+
+      raise "no plugin '#{method}' found (might be a typo or other error)" if !file
+
+      instance_eval(File.read(file), file)
+      
+      raise "invalid plugin '#{method}'" if !respond_to? method
+
+      send method.to_sym, *args
+    end
+
+    def plugins
+      @plugins ||= []
+    end
+
     private
 
     # Rules corresponding to a given path, in reversed order of precedence
@@ -325,7 +375,8 @@ module Wake
     # rules<Array(Rule)>:: rules corresponding to <tt>path</tt>
     #
     def rules_for(path)
-      @rules.reverse.select do |rule| path.match(rule.pattern) end
+      # @rules.reverse.select do |rule| path.match(rule.pattern) end
+      @rules.reverse.select { |rule| rule.match(path) }
     end
 
     # Make a path relative to current working directory.
@@ -345,5 +396,14 @@ module Wake
       @default_action = lambda {}
       @rules.clear
     end
+
+    def process_args cls, args
+      if args.length === 1 && Hash === args.first
+        cls.default :options => args.pop
+      else
+        plugins << cls.new( self, *args )
+      end
+    end
+
   end
 end

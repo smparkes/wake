@@ -1,10 +1,13 @@
 #!/usr/bin/env ruby
 
-$VERBOSE = true
+$: << File.expand_path(File.dirname(__FILE__) + '/../lib/wake') # FIXME
 
 require 'pathname'
 require 'optparse'
 
+require 'rubygems'
+require 'wake/event_handlers/em'
+require 'wake/deps'
 require 'wake'
 
 module Wake
@@ -82,7 +85,5 @@ end
 
 path = Wake.options.wakefile || "Wakefile"
 relative_path = Pathname( path ) rescue abort(Wake::Bin.usage)
-absolute_path = Wake::Bin.find_in_load_path(relative_path) or abort("no script found; file #{relative_path.to_s.inspect} is not in path.")
-
-Wake::Controller.new(Wake::Script.new(absolute_path)).run
+Wake::Controller.new(Wake::Script.new(relative_path)).run
 

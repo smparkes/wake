@@ -74,7 +74,7 @@ module Wake
         end
 
         def stop
-          #  p "stop", pathname
+          # p "stop", pathname
           begin
             # $stderr.puts "stop.s #{signature}: #{pathname}"
             stop_watching
@@ -132,6 +132,7 @@ module Wake
           @first_time = true
           @watchers = {}
           ::EM.run do
+            Signal.trap('QUIT') { ::EM.stop }
             attach
             if Wake.options.once
               Wake.batches.each do |k,v|
@@ -140,6 +141,7 @@ module Wake
               return 
             end
           end
+          Signal.trap('QUIT', 'DEFAULT')
         end
       end
 
@@ -162,19 +164,15 @@ module Wake
         @old_paths.delete Pathname(path)
       end
 
+      require 'pp'
+
       def watch path, event = nil
-        begin
-          # p "watch", path, @first_time
-          ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
-            watcher.init @first_time, event
-            @watchers[path] = watcher
-          end
-          @old_paths << path
-        rescue Errno::ENOENT => e
-          $stderr.puts e
-        rescue Exception => e
-          $stderr.puts e
+        # p "watch", path, @first_time
+        ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
+          watcher.init @first_time, event
+          @watchers[path] = watcher
         end
+        @old_paths << path
       end  
 
       def add path
@@ -199,6 +197,7 @@ module Wake
           @monitored_paths = @monitored_paths.uniq 
           new_paths = @monitored_paths - @old_paths
           remove_paths = @old_paths - @monitored_paths
+          skip_paths = []
           # p "want", @monitored_paths
           # p "old", @old_paths
           # p "new", new_paths
@@ -208,14 +207,18 @@ module Wake
               $stderr.puts "warning: replacing (ignoring) watcher for #{path}"
               @watchers[path].stop
             end
-            watch path, event
+            begin
+              watch path, event
+            rescue Errno::ENOENT, EventMachine::Unsupported
+              skip_paths << path
+            end
           end
           remove_paths.each do |path|
             watcher = @watchers[path]
             watcher.stop if watcher
             @watchers.delete path
           end
-          @old_paths = @monitored_paths.dup
+          @old_paths = @monitored_paths - skip_paths
           # $stderr.print "#{new_paths} #{remove_paths}\n";
         end while !new_paths.empty? and !remove_paths.empty?
         @first_time = false

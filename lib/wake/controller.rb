@@ -1,3 +1,5 @@
+require 'find'
+
 module Wake
 
   class Refresh < Exception; end
@@ -45,7 +47,10 @@ module Wake
     #
     def run
       @script.parse!
-      handler.listen(monitored_paths)
+      graph = self.graph
+      producers = @script.plugins.map { |pi| pi.producer }.compact
+      pp producers
+      handler.listen(graph.paths)
     rescue Interrupt
     end
 
@@ -62,40 +67,74 @@ module Wake
     def update(path, event_type = nil)
       path = Pathname(path).expand_path
       # p path, event_type
-      if path == @script.path && ![ :load, :deleted, :moved ].include?(event_type)
+      # if path == @script.path && ![ :load, :deleted, :moved ].include?(event_type)
+      if path == @script.path && event_type == :modified
         @script.parse!
         handler.refresh(monitored_paths)
       else
+        refresh = false
         begin
           @script.call_action_for(path, event_type)
         rescue Refresh => refresh
+          refresh = true
+        end
+        if refresh or ( File.directory? path and event_type == :modified )
           handler.refresh(monitored_paths)
         end
       end
     end
 
-    # List of paths the script is monitoring.
-    #
-    # Basically this means all paths below current directoly recursivelly that
-    # match any of the rules' patterns, plus the script file.
-    #
-    # ===== Returns
-    # paths<Array[Pathname]>:: List of monitored paths
-    #
-    def monitored_paths
-      paths = Dir['**/*'].select do |path|
-        watch = false
-        @script.rules.reverse.each do |r|
-          rule_watches = r.watch(path)
-          if false
-            $stderr.print "watch ", path, " ", rule_watches, "\n"
+    def graph
+      # paths = Dir['**/*'].select do |path|
+      graph = Graph.new
+      pruners = @script.plugins.map { |pi| pi.pruner }.compact
+      watchers = @script.plugins.map { |pi| pi.watcher }.compact
+      Find.find(".") do |path|
+        path.sub! %r{^\./}, ""
+        pruners.map { |pruner| pruner.call( path ) && Find.prune }
+        watchers.map { |watcher| watcher.call( path, graph ) }
+
+
+        if false
+          watch = false
+          @script.rules.reverse.each do |r|
+            rule_watches = r.watch(path)
+            if false
+              $stderr.print "watch ", path, " ", rule_watches, "\n"
+            end
+            next if rule_watches.nil?
+            watch = rule_watches
+            if !watch
+              Find.prune
+            end
+            break
           end
-          next if rule_watches.nil?
-          watch = rule_watches
-          break
+          paths << path if watch || File.directory?(path)
         end
-        watch
+
+
+
+
       end
+
+      if false
+      while !(new_paths = graph.paths.keys - paths.keys).empty?
+        pp "new", new_paths
+        paths = graph.paths
+        new_paths.each do |path|
+          p "x", path, watchers
+          watchers.map { |watcher| watcher.call( path, graph ) and paths[path] = path }
+        end
+        pp "a", graph.paths.keys.sort
+        pp "b",paths.keys.sort
+        pp "c", graph.paths.keys.sort - paths.keys.sort
+      end
+      end
+
+      # pp caller(0)
+
+
+      if false
       paths.each do |path|
         # $stderr.print "lookup #{path}\n"
         @script.depends_on(path).each do |dependence|
@@ -107,6 +146,13 @@ module Wake
       paths.uniq!
       # $stderr.print "watch #{paths.map {|path| Pathname(path).expand_path }.join(' ')}\n"
       paths.map {|path| Pathname(path).expand_path }
+      end
+
+      pp graph.paths
+      pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
+      pp graph.levelize(graph.nodes.reverse,:depended_on_by).map { |level| level.map { |n| n.path } }
+      # graph.paths.keys
+      graph
     end
   end
 end

@@ -1,0 +1,4 @@
+class << self
+  def jasmine *args
+  end
+end
