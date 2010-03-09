@@ -9,7 +9,7 @@ class Wake::Graph::Node
       @node = node
     end
     def each &block
-      nodes.values.each &block
+      nodes.values.each( &block )
     end
   end
 

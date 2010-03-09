@@ -5,11 +5,11 @@ class Wake::Graph
   include TSort
 
   def tsort_each_node &block
-    node_hash.values.each &block
+    node_hash.values.each( &block )
   end
 
   def tsort_each_child node, &block
-    node.depended_on_by.each &block
+    node.depended_on_by.each( &block )
   end
 
   def [] arg

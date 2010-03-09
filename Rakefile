@@ -20,6 +20,12 @@ Hoe.spec "wake" do
   ]
 
   self.extra_dev_deps = [
+    [ 'minitest' ],
+    [ 'mocha' ],
+    [ 'every' ],
+    [ 'redgreen' ],
+    [ 'phocus' ],
+    [ 'ruby-debug' ]
   ]
 
 end

@@ -1,5 +1,5 @@
 require 'rubygems'
-require 'fsdb'
+# require 'fsdb'
 
 require 'wake/script'
 
