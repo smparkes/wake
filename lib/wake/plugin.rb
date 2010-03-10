@@ -1,3 +1,5 @@
+require 'digest/md5'
+
 require 'wake/graph/node/virtual'
 require 'wake/graph/node/file'
 
@@ -111,6 +113,12 @@ class Wake::Plugin
     matches
   end
 
+  def out_of_date? node
+    return true if !File.exists? node.path
+    mtime = File.mtime node.path
+    node.depends_on.nodes.values.detect { |dep| File.exists?(dep.path) and File.mtime(dep.path) > mtime }
+  end
+
   private
 
   def create graph, node, options = {}
@@ -147,20 +155,29 @@ class Wake::Plugin
   end
 
   def verify_hash string, hash
-    p "Huh?"
-    p string, hash
+    Digest::MD5.hexdigest(string) == hash
   end
 
   def check_signature pair, path
     return true if !File.exists? path
     pair[0] += "WAKE HASH: "
     content = File.read(path).split("\n")
-    p content.last[0,pair[0].length], pair[0], content.last[0,pair[0].length] != pair[0]
     if content.last[0,pair[0].length] != pair[0] ||
        content.last[-pair[1].length,pair[1].length] != pair[1] ||
        !verify_hash( content[0..-2].join("\n"),
                      content.last[pair[0].length,content.last.length-pair[0].length-pair[1].length] )
-      $stderr.puts "#{plugin_name}: #{path} does not have signature: not overwriting"
+      $stderr.puts "#{plugin_name}: #{path} missing or incorrect signature: not overwriting"
+      return false
+    end
+    true
+  end
+
+  def sign pair, path
+    return if !File.exists? path
+    pair[0] += "WAKE HASH: "
+    content = File.read(path).split("\n").join("\n")
+    File.open(path,"a") do |f|
+      f.print(pair[0],Digest::MD5.hexdigest(content),pair[1],"\n")
     end
   end
 
@@ -168,9 +185,18 @@ class Wake::Plugin
     if sig = options[:signature] and !check_signature sig, node.path
       return -1
     end
+    if File.exists? node.path
+      FileUtils.rm node.path
+    end
     print string, "\n"
     system string
-    print $?,"\n"
+    status = $?.exited? ? $?.exitstatus : 255
+    return status if status > 0
+    sign sig, node.path if sig
+    bits = File.stat(node.path).mode
+    bits &= ~0222
+    FileUtils.chmod bits, node.path
+    return 0
   end
 
 end

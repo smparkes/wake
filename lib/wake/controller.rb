@@ -52,6 +52,7 @@ module Wake
       l = 0
       graph.levelize(graph.nodes,:depends_on).each do |level|
         l+=1
+        level = level.select { |n| n.out_of_date? }
         plugin_hash = level.inject({}) do |hash,node|
           # p node.path, node.object_id, node.plugin ? node.plugin.class : "nope"
           if plugin = node.plugin

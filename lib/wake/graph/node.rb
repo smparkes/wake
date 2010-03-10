@@ -91,4 +91,12 @@ class Wake::Graph::Node
     self
   end
 
+  def precious
+    @precious
+  end
+
+  def out_of_date?
+    plugin and plugin.out_of_date? self
+  end
+
 end
