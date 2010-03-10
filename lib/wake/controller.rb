@@ -133,23 +133,6 @@ module Wake
       end
 
       if false
-      while !(new_paths = graph.paths.keys - paths.keys).empty?
-        pp "new", new_paths
-        paths = graph.paths
-        new_paths.each do |path|
-          p "x", path, watchers
-          watchers.map { |watcher| watcher.call( path, graph ) and paths[path] = path }
-        end
-        pp "a", graph.paths.keys.sort
-        pp "b",paths.keys.sort
-        pp "c", graph.paths.keys.sort - paths.keys.sort
-      end
-      end
-
-      # pp caller(0)
-
-
-      if false
       paths.each do |path|
         # $stderr.print "lookup #{path}\n"
         @script.depends_on(path).each do |dependence|

@@ -99,4 +99,10 @@ class Wake::Graph::Node
     plugin and plugin.out_of_date? self
   end
 
+  def primary_dependence
+    values = depends_on.nodes.values.uniq
+    raise "ambiguous primary for #{path}" if values.length > 1
+    values[0]
+  end
+
 end
