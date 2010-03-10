@@ -1,0 +1,34 @@
+class Wake::HAML < Wake::Plugin
+
+  extend Wake::Plugin::Class
+
+  default :regexp => %r{\.haml$},
+          :options => { :doctype => :html5,
+                        :suffix => ".html",
+                        :protect => true }
+
+  def watcher
+    default = super
+    lambda do |path, graph|
+      if node = default.call(path, graph)
+        x = create graph, Node::File.new(node.path.sub(cls.default[:regexp],
+                                                    cls.default[:options][:suffix])),
+               :from => node, :plugin => self
+        # p x.depends_on.nodes.map { |n| n.path }
+      end
+    end
+  end
+
+  def fire_one
+    lambda do |node|
+      cmd node,
+          "haml -f #{cls.default[:options][:doctype].to_s || 'html'} #{node.depends_on.nodes.values[0].path} #{node.path}",
+           :signature => ( cls.default[:options][:protect] ? [ "<!--", "-->" ] : nil )
+    end
+  end
+
+end
+
+# Local Variables:
+# mode:ruby
+# End:

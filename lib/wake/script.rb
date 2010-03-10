@@ -346,7 +346,7 @@ module Wake
         require method
       rescue LoadError; end
 
-      filename = File.join method, "wake.wk"
+      filename = File.join method, method +".wk"
 
       file = $:.map { |dir| File.join dir, filename }.detect { |f| File.exists? f }
 

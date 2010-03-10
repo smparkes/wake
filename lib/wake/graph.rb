@@ -4,12 +4,20 @@ require 'tsort'
 class Wake::Graph
   include TSort
 
+  def directed_tsort direction
+    old, @direction = @direction, direction
+    v = tsort
+    @direction = old
+    v
+  end
+
   def tsort_each_node &block
     node_hash.values.each( &block )
   end
 
   def tsort_each_child node, &block
-    node.depended_on_by.each( &block )
+    # node.depended_on_by.each( &block )
+    node.send(@direction).each(&block)
   end
 
   def [] arg
@@ -21,17 +29,15 @@ class Wake::Graph
   end
 
   def << node
-    raise "hell" if !(Node === node)
-    raise "hell" if node_hash[node.path] && node_hash[node.path].class != node.class
-    node_hash[node.path] ||= node
+    node_hash[node.path] = node.replace node_hash[node.path]
   end
 
-  def nodes
-    tsort
+  def nodes direction = :depended_on_by
+    directed_tsort direction
   end
 
-  def paths
-    tsort.map { |n| n.path }
+  def paths direction = :depended_on_by
+    directed_tsort(direction).map { |n| n.path }
   end
 
   def levelize nodes, method
@@ -41,13 +47,12 @@ class Wake::Graph
       level = nil
       dependences = node.send(method).nodes.values
       if dependences.empty?
-        # print node.path, 0, "\n"
         level = levels[node] = 0
       else
         level = levels[node] = 1 +
           dependences.inject(0) { |max,n| l = levels[n]; l > max ? l : max }
-        # print node.path, level, "\n"
       end
+      # print "#{node.path} level #{level}\n"
       ( result[level] ||= [] ) << node
     end
     result

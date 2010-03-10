@@ -48,8 +48,22 @@ module Wake
     def run
       @script.parse!
       graph = self.graph
-      producers = @script.plugins.map { |pi| pi.producer }.compact
-      pp producers
+      # pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
+      l = 0
+      graph.levelize(graph.nodes,:depends_on).each do |level|
+        l+=1
+        plugin_hash = level.inject({}) do |hash,node|
+          # p node.path, node.object_id, node.plugin ? node.plugin.class : "nope"
+          if plugin = node.plugin
+            hash[plugin] ||= []
+            hash[plugin] << node
+          end
+          hash
+        end
+        plugin_hash.each do |plugin, nodes|
+          plugin.fire_all.call nodes
+        end
+      end
       handler.listen(graph.paths)
     rescue Interrupt
     end
@@ -148,9 +162,9 @@ module Wake
       paths.map {|path| Pathname(path).expand_path }
       end
 
-      pp graph.paths
-      pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
-      pp graph.levelize(graph.nodes.reverse,:depended_on_by).map { |level| level.map { |n| n.path } }
+      # pp graph.paths
+      # pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
+      # pp graph.levelize(graph.nodes(:depends_on),:depended_on_by).map { |level| level.map { |n| n.path } }
       # graph.paths.keys
       graph
     end

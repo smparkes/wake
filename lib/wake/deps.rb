@@ -8,6 +8,7 @@ class Wake::Script
   remove_method :depends_on, :depended_on_by
 
   def depends_on path
+    return []
     result = []
     begin
       result = db["file://"+Pathname(path).realpath.to_s + ".on.yml"] || []
@@ -18,6 +19,7 @@ class Wake::Script
   end
 
   def depended_on_by path
+    return []
     result = []
     begin
       result = db["file://"+Pathname(path).realpath.to_s + ".by.yml"] || []
