@@ -144,7 +144,7 @@ module Wake
       @path  = path
       @rules = []
       @default_action = lambda {}
-      ignore %r{^/?\..+}
+      ignore %r{(^/?|/)\..}
       directory
     end
 
