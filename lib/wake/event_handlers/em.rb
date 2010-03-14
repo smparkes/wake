@@ -147,7 +147,7 @@ module Wake
           @first_time = true
           @watchers = {}
           ::EM.run do
-            Signal.trap('QUIT') { ::EM.stop }
+            Signal.trap('QUIT') { ::EM.stop; notify :sig_quit }
             attach
             reset_watchdog
           end

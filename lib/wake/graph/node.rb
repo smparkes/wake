@@ -95,8 +95,8 @@ class Wake::Graph::Node
     @precious
   end
 
-  def out_of_date?
-    plugin and plugin.out_of_date? self
+  def out_of_date? flag
+    plugin and plugin.out_of_date? self, flag
   end
 
   def changed!

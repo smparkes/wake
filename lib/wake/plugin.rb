@@ -113,7 +113,7 @@ class Wake::Plugin
     matches
   end
 
-  def out_of_date? node
+  def out_of_date? node, flag
     return true if !File.exists? node.path
     mtime = File.mtime node.path
     node.depends_on.nodes.values.detect { |dep| File.exists?(dep.path) and File.mtime(dep.path) > mtime }

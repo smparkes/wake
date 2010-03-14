@@ -40,13 +40,13 @@ class Wake::Graph
     directed_tsort(direction).map { |n| n.path }
   end
 
-  def levelize nodes, method
+  def levelize nodes, method, flag
     result = []
     levels = {}
     while node = nodes.pop
       level = nil
       dependences = node.send(method).nodes.values
-      dependences = dependences.select { |n| n.out_of_date? }
+      dependences = dependences.select { |n| n.out_of_date? flag }
       if dependences.empty?
         level = levels[node] = 0
       else

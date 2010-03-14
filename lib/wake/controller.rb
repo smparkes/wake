@@ -21,33 +21,10 @@ module Wake
       @script  = script
     end
 
-    def _run
-      @script.parse!
-      graph = self.graph
-      # pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
-      l = 0
-      graph.levelize(graph.nodes,:depends_on).each do |level|
-        l+=1
-        level = level.select { |n| n.out_of_date? }
-        plugin_hash = level.inject({}) do |hash,node|
-          # p node.path, node.object_id, node.plugin ? node.plugin.class : "nope"
-          if plugin = node.plugin
-            hash[plugin] ||= []
-            hash[plugin] << node
-          end
-          hash
-        end
-        plugin_hash.each do |plugin, nodes|
-          plugin.fire_all.call nodes
-        end
-      end
-      handler.listen(graph.paths)
-    rescue Interrupt
-    end
-
     def run
       @script.parse!
       graph = self.graph
+      @all = true
       handler.listen(graph.paths)
     rescue Interrupt
     end
@@ -55,6 +32,8 @@ module Wake
     def update path = nil, event_type = nil
       if !path
         execute
+      elsif path == :sig_quit
+        @all = true
       else
         graph[path].changed!
       end
@@ -64,9 +43,9 @@ module Wake
       graph = self.graph
       # pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
       l = 0
-      graph.levelize(graph.nodes,:depends_on).each do |level|
+      graph.levelize(graph.nodes, :depends_on, @all).each do |level|
         l+=1
-        level = level.select { |n| n.out_of_date? }
+        level = level.select { |n| n.out_of_date? @all }
         plugin_hash = level.inject({}) do |hash,node|
           # p node.path, node.object_id, node.plugin ? node.plugin.class : "nope"
           if plugin = node.plugin
@@ -79,6 +58,7 @@ module Wake
           plugin.fire_all.call nodes
         end
       end
+      @all = false
     end
 
     def _update(path, event_type = nil)
