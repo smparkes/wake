@@ -24,7 +24,7 @@ class Wake::Graph
     if Node === arg
       node_hash[arg.path]
     else
-      node_hash[arg]
+      node_hash[arg.to_s]
     end
   end
 
@@ -46,6 +46,7 @@ class Wake::Graph
     while node = nodes.pop
       level = nil
       dependences = node.send(method).nodes.values
+      dependences = dependences.select { |n| n.out_of_date? }
       if dependences.empty?
         level = levels[node] = 0
       else

@@ -46,7 +46,7 @@ class Wake::Graph::Node
   attr_accessor :plugin
 
   def initialize path
-    @path = path
+    @path = Pathname(path).to_s
   end
 
   def watchers
@@ -97,6 +97,9 @@ class Wake::Graph::Node
 
   def out_of_date?
     plugin and plugin.out_of_date? self
+  end
+
+  def changed!
   end
 
   def primary_dependence

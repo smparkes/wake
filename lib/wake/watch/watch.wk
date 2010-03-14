@@ -1,0 +1,7 @@
+class Wake::Watch < Wake::Plugin
+  extend Wake::Plugin::Class
+end
+
+# Local Variables:
+# mode:ruby
+# End:

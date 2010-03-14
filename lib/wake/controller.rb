@@ -4,21 +4,6 @@ module Wake
 
   class Refresh < Exception; end
 
-  # The controller contains the app's core logic.
-  #
-  # ===== Examples
-  #
-  #   script = Wake::Script.new(file)
-  #   contrl = Wake::Controller.new(script)
-  #   contrl.run
-  #
-  # Calling <tt>#run</tt> will enter the listening loop, and from then on every
-  # file event will trigger its corresponding action defined in <tt>script</tt>
-  #
-  # The controller also automatically adds the script's file itself to its list
-  # of monitored files and will detect any changes to it, providing on the fly
-  # updates of defined rules.
-  #
   class Controller
 
     def handler
@@ -32,20 +17,11 @@ module Wake
       @handler
     end
     
-    # Creates a controller object around given <tt>script</tt>
-    #
-    # ===== Parameters
-    # script<Script>:: The script object
-    #
     def initialize(script)
       @script  = script
     end
 
-    # Enters listening loop.
-    #
-    # Will block control flow until application is explicitly stopped/killed.
-    #
-    def run
+    def _run
       @script.parse!
       graph = self.graph
       # pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
@@ -69,17 +45,43 @@ module Wake
     rescue Interrupt
     end
 
-    # Callback for file events.
-    #
-    # Called while control flow in in listening loop. It will execute the
-    # file's corresponding action as defined in the script. If the file is the
-    # script itself, it will refresh its state to account for potential changes.
-    #
-    # ===== Parameters
-    # path<Pathname, String>:: path that triggered event
-    # event<Symbol>:: event type (ignored for now)
-    #
-    def update(path, event_type = nil)
+    def run
+      @script.parse!
+      graph = self.graph
+      handler.listen(graph.paths)
+    rescue Interrupt
+    end
+
+    def update path = nil, event_type = nil
+      if !path
+        execute
+      else
+        graph[path].changed!
+      end
+    end
+
+    def execute
+      graph = self.graph
+      # pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
+      l = 0
+      graph.levelize(graph.nodes,:depends_on).each do |level|
+        l+=1
+        level = level.select { |n| n.out_of_date? }
+        plugin_hash = level.inject({}) do |hash,node|
+          # p node.path, node.object_id, node.plugin ? node.plugin.class : "nope"
+          if plugin = node.plugin
+            hash[plugin] ||= []
+            hash[plugin] << node
+          end
+          hash
+        end
+        plugin_hash.each do |plugin, nodes|
+          plugin.fire_all.call nodes
+        end
+      end
+    end
+
+    def _update(path, event_type = nil)
       path = Pathname(path).expand_path
       # p path, event_type
       # if path == @script.path && ![ :load, :deleted, :moved ].include?(event_type)
@@ -100,57 +102,24 @@ module Wake
     end
 
     def graph
-      # paths = Dir['**/*'].select do |path|
-      graph = Graph.new
-      pruners = @script.plugins.map { |pi| pi.pruner }.compact
-      watchers = @script.plugins.map { |pi| pi.watcher }.compact
-      Find.find(".") do |path|
-        path.sub! %r{^\./}, ""
-        pruners.map { |pruner| pruner.call( path ) && Find.prune }
-        watchers.map { |watcher| watcher.call( path, graph ) }
-
-
-        if false
-          watch = false
-          @script.rules.reverse.each do |r|
-            rule_watches = r.watch(path)
-            if false
-              $stderr.print "watch ", path, " ", rule_watches, "\n"
-            end
-            next if rule_watches.nil?
-            watch = rule_watches
-            if !watch
-              Find.prune
-            end
-            break
-          end
-          paths << path if watch || File.directory?(path)
+      if @script_modified_at != @script.modified_at
+        @script_modified_at = @script.modified_at
+        # paths = Dir['**/*'].select do |path|
+        @graph = Graph.new
+        pruners = @script.plugins.map { |pi| pi.pruner }.compact
+        watchers = @script.plugins.map { |pi| pi.watcher }.compact
+        Find.find(".") do |path|
+          path.sub! %r{^\./}, ""
+          pruners.map { |pruner| pruner.call( path ) && Find.prune }
+          watchers.map { |watcher| watcher.call( path, @graph ) }
         end
-
-
-
-
-      end
-
-      if false
-      paths.each do |path|
-        # $stderr.print "lookup #{path}\n"
-        @script.depends_on(path).each do |dependence|
-          # $stderr.print "add #{dependence} for #{path}\n"
-          paths << dependence
-        end
-      end
-      paths.push(@script.path).compact!
-      paths.uniq!
-      # $stderr.print "watch #{paths.map {|path| Pathname(path).expand_path }.join(' ')}\n"
-      paths.map {|path| Pathname(path).expand_path }
       end
 
       # pp graph.paths
       # pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
       # pp graph.levelize(graph.nodes(:depends_on),:depended_on_by).map { |level| level.map { |n| n.path } }
       # graph.paths.keys
-      graph
+      @graph
     end
   end
 end

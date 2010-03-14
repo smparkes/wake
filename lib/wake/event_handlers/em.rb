@@ -31,7 +31,7 @@ module Wake
           # $stderr.puts "#{signature}: #{pathname}"
           update_reference_times
           # FIX: doesn't pass events
-          if !event
+          if !event && !first_time
             SingleFileWatcher.handler.notify(pathname, (first_time ? :load : :created) )
           end
         end
@@ -42,12 +42,14 @@ module Wake
         end
 
         def file_modified
+          SingleFileWatcher.handler.reset_watchdog
           # p "mod", pathname, type
           SingleFileWatcher.handler.notify(pathname, type)
           update_reference_times
         end
 
         def file_moved
+          SingleFileWatcher.handler.reset_watchdog
           # p "mov", pathname
           SingleFileWatcher.handler.forget self, pathname
           begin
@@ -60,6 +62,7 @@ module Wake
         end
 
         def file_deleted
+          SingleFileWatcher.handler.reset_watchdog
           # p "del", pathname
           # $stderr.puts "stop.fd #{signature}: #{pathname} #{type}"
           SingleFileWatcher.handler.forget self, pathname
@@ -74,6 +77,7 @@ module Wake
         end
 
         def stop
+          SingleFileWatcher.handler.reset_watchdog
           # p "stop", pathname
           begin
             # $stderr.puts "stop.s #{signature}: #{pathname}"
@@ -120,6 +124,17 @@ module Wake
         @attaching = false
       end
 
+      def reset_watchdog
+        @watchdog.cancel if @watchdog
+        @watchdog = ::EM::Timer.new(0.01) do
+          @watchdog = nil
+          notify nil
+          if Wake.options.once
+            ::EM.stop
+          end
+        end
+      end
+
       # Enters listening loop.
       #
       # Will block control flow until application is explicitly stopped/killed.
@@ -134,14 +149,10 @@ module Wake
           ::EM.run do
             Signal.trap('QUIT') { ::EM.stop }
             attach
-            if Wake.options.once
-              Wake.batches.each do |k,v|
-                k.deliver
-              end
-              return 
-            end
+            reset_watchdog
           end
           Signal.trap('QUIT', 'DEFAULT')
+          return if Wake.options.once
         end
       end
 
@@ -155,12 +166,12 @@ module Wake
       end
 
       def forget connection, path
-        if @watchers[path] != connection
+        if false and @watchers[path] != connection
           $stderr.puts \
             "warning: no/wrong watcher to forget for #{path}: #{@watchers[path]} vs #{connection}"
         end
         @watchers.delete path
-        raise "hell: #{path}" if !@old_paths.include? Pathname(path)
+        false and raise "hell: #{path}" if !@old_paths.include? Pathname(path)
         @old_paths.delete Pathname(path)
       end
 

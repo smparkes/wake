@@ -128,10 +128,6 @@ module Wake
 
     end
     
-    # TODO eval context
-    class API #:nodoc:
-    end
-
     # Creates a script object for <tt>path</tt>.
     #
     # Does not parse the script.  The controller knows when to parse the script.
@@ -145,51 +141,11 @@ module Wake
       @rules = []
       @default_action = lambda {}
       ignore %r{(^/?|/)\..}
-      directory
+      directory { parse! }
+      watch path.to_s { parse! }
     end
 
-    # Main script API method. Builds a new rule, binding a pattern to an action.
-    #
-    # Whenever a file is saved that matches a rule's <tt>pattern</tt>, its
-    # corresponding <tt>action</tt> is triggered.
-    #
-    # Patterns can be either a Regexp or a string. Because they always
-    # represent paths however, it's simpler to use strings. But remember to use
-    # single quotes (not double quotes), otherwise escape sequences will be
-    # parsed (for example "foo/bar\.rb" #=> "foo/bar.rb", notice "\." becomes
-    # "."), and won't be interpreted as the regexp you expect.
-    #
-    # Also note that patterns will be matched against relative paths (relative
-    # from current working directory).
-    #
-    # Actions, the blocks passed to <tt>watch</tt>, receive a MatchData object
-    # as argument. It will be populated with the whole matched string (md[0])
-    # as well as individual backreferences (md[1..n]). See MatchData#[]
-    # documentation for more details.
-    #
-    # ===== Examples
-    #
-    #   # in script file
-    #   watch( 'test/test_.*\.rb' )  {|md| system("ruby #{md[0]}") }
-    #   watch( 'lib/(.*)\.rb' )      {|md| system("ruby test/test_#{md[1]}.rb") }
-    #
-    # With these two rules, wake will run any test file whenever it is itself
-    # changed (first rule), and will also run a corresponding test file
-    # whenever a lib file is changed (second rule).
-    #
-    # ===== Parameters
-    # pattern<~#match>:: pattern to match targetted paths
-    # event_types<Symbol|Array<Symbol>>::
-    #   Rule will only match events of one of these type. Accepted types are :accessed,
-    #   :modified, :changed, :delete and nil (any), where the first three
-    #   correspond to atime, mtime and ctime respectively. Defaults to
-    #   :modified.
-    # action<Block>:: action to trigger
-    #
-    # ===== Returns
-    # rule<Rule>:: rule created by the method
-    #
-    def watch(pattern, event_type = DEFAULT_EVENT_TYPE, predicate = nil, options = {}, &action)
+    def _watch(pattern, event_type = DEFAULT_EVENT_TYPE, predicate = nil, options = {}, &action)
       event_types = Array(event_type)
       @rules << Rule.new(pattern, event_types, predicate, options, action || @default_action)
       @rules.last
@@ -220,9 +176,6 @@ module Wake
       @default_action = action
     end
 
-    # Eval content of script file.
-    #--
-    # TODO fix script file not found error
     def parse!
       Wake.debug('loading script file %s' % @path.to_s.inspect)
 
@@ -245,15 +198,17 @@ module Wake
 
       instance_eval(@path.read, @path)
 
-      # require 'pp'
-      # pp caller(0)
-
     rescue Errno::ENOENT
       # TODO figure out why this is happening. still can't reproduce
       Wake.debug('script file "not found". wth')
       sleep(0.3) #enough?
       instance_eval(@path.read, @path)
+    ensure
+      # file time?
+      @modified_at = Time.now
     end
+
+    attr_reader :modified_at
 
     class << self
       attr_accessor :script, :handler
