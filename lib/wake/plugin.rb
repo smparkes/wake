@@ -43,14 +43,15 @@ class Wake::Plugin
         method = names.pop
       end while [ "wake", "plugin" ].include? method and !names.empty?
       end
-      Wake::Script.send :define_method, Class.plugin_name(subclass) do |*args|
-        process_args subclass, args
+      Wake::Script.send :define_method, Class.plugin_name(subclass) do |*args,&block|
+        process_args subclass, args, &block
       end
     end
   end
 
-  def initialize wake, *args
+  def initialize wake, *args, &blk
     @wake = wake
+    block blk
     glob args
     regexp args
     options args
@@ -58,6 +59,10 @@ class Wake::Plugin
 
   def plugin_name
     self.class.plugin_name
+  end
+
+  def block blk
+    @block = blk
   end
 
   def glob args
@@ -84,7 +89,7 @@ class Wake::Plugin
   end
 
   def pruner; nil; end
-  def fire_one; nil; end
+  def fire_one; @blk end
 
   def fire_all
     if fire_one

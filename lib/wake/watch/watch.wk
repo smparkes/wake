@@ -1,7 +1,13 @@
+# -*- mode: ruby -*-
+
 class Wake::Watch < Wake::Plugin
   extend Wake::Plugin::Class
+  def watcher
+    default = super
+    lambda do |path, graph|
+      node = default.call(path, graph)
+      node.watch &@block if node && @block
+      node
+    end
+  end
 end
-
-# Local Variables:
-# mode:ruby
-# End:

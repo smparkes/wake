@@ -4,6 +4,10 @@ class Wake::Directory < Wake::Plugin
   extend Wake::Plugin::Class
   def watcher
     default = super
-    lambda { |path, graph| File.directory? path and default.call(path, graph) }
+    lambda do |path, graph|
+      node = File.directory?(path) && default.call(path, graph)
+      node.watch &@block if node && @block
+      node
+    end
   end
 end

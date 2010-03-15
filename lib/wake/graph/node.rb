@@ -100,12 +100,18 @@ class Wake::Graph::Node
   end
 
   def changed!
+    @watches and @watches.each { |watch| watch.call }
   end
 
   def primary_dependence
     values = depends_on.nodes.values.uniq
     raise "ambiguous primary for #{path}" if values.length > 1
     values[0]
+  end
+
+  def watch &block
+    @watches ||= []
+    @watches << block
   end
 
 end

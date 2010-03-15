@@ -142,7 +142,7 @@ module Wake
       @default_action = lambda {}
       ignore %r{(^/?|/)\..}
       directory { parse! }
-      watch path.to_s { parse! }
+      watch(path.to_s) { parse! }
     end
 
     def _watch(pattern, event_type = DEFAULT_EVENT_TYPE, predicate = nil, options = {}, &action)
@@ -295,7 +295,7 @@ module Wake
       Pathname(@path.respond_to?(:to_path) ? @path.to_path : @path.to_s).expand_path
     end
 
-    def method_missing *args
+    def method_missing *args, &block
       method = args.shift.to_s
       begin
         require method
@@ -311,7 +311,7 @@ module Wake
       
       raise "invalid plugin '#{method}'" if !respond_to? method
 
-      send method.to_sym, *args
+      send method.to_sym, *args, &block
     end
 
     def plugins
@@ -352,11 +352,11 @@ module Wake
       @rules.clear
     end
 
-    def process_args cls, args
+    def process_args cls, args, &block
       if args.length === 1 && Hash === args.first
         cls.default :options => args.pop
       else
-        plugins << cls.new( self, *args )
+        plugins << cls.new( self, *args, &block )
       end
     end
 

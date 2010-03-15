@@ -36,7 +36,7 @@ module Wake
       elsif path == :sig_quit
         @all = true
       else
-        graph[path].changed!
+        graph[path] and graph[path].changed!
       end
     end
 
