@@ -61,7 +61,7 @@ class Wake::Plugin
   end
 
   def glob args
-    if String === args[0] 
+    if String === args[0] || ( Array === args[0] && String === args[0][0] )
       @glob = args.shift
     else
       @glob = cls.default[:glob]
@@ -69,7 +69,7 @@ class Wake::Plugin
   end
 
   def regexp args
-    if Regexp === args[0] 
+    if Regexp === args[0] || ( Array === args[0] && Regexp === args[0][0] )
       @regexp = args.shift
     else
       @regexp = cls.default[:regexp]
@@ -138,7 +138,10 @@ class Wake::Plugin
       begin
         if @glob
           set = {}
-          Dir[@glob].each { |f| set[f] = f }
+          globs = Array(@glob)
+          globs.each do |glob|
+           Dir[glob].each { |f| set[f] = f }
+          end
           set
         else
           {}
@@ -163,10 +166,11 @@ class Wake::Plugin
     prefix = pair[0] + "WAKE HASH: "
     suffix = pair[1] + ""
     content = File.read(path).split("\n")
-    if content.last[0,prefix.length] != prefix ||
+    if content && content.last && (
+       content.last[0,prefix.length] != prefix ||
        content.last[-suffix.length,suffix.length] != suffix ||
        !verify_hash( content[0..-2].join("\n"),
-                     content.last[prefix.length,content.last.length-prefix.length-suffix.length] )
+                     content.last[prefix.length,content.last.length-prefix.length-suffix.length] ) )
       $stderr.puts "#{plugin_name}: #{path} missing or incorrect signature: not overwriting"
       return false
     end

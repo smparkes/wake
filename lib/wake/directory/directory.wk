@@ -1,3 +1,5 @@
+# -*- mode: ruby -*-
+
 class Wake::Directory < Wake::Plugin
   extend Wake::Plugin::Class
   def watcher
@@ -5,7 +7,3 @@ class Wake::Directory < Wake::Plugin
     lambda { |path, graph| File.directory? path and default.call(path, graph) }
   end
 end
-
-# Local Variables:
-# mode:ruby
-# End:
