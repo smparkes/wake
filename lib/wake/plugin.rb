@@ -160,12 +160,13 @@ class Wake::Plugin
 
   def check_signature pair, path
     return true if !File.exists? path
-    pair[0] += "WAKE HASH: "
+    prefix = pair[0] + "WAKE HASH: "
+    suffix = pair[1] + ""
     content = File.read(path).split("\n")
-    if content.last[0,pair[0].length] != pair[0] ||
-       content.last[-pair[1].length,pair[1].length] != pair[1] ||
+    if content.last[0,prefix.length] != prefix ||
+       content.last[-suffix.length,suffix.length] != suffix ||
        !verify_hash( content[0..-2].join("\n"),
-                     content.last[pair[0].length,content.last.length-pair[0].length-pair[1].length] )
+                     content.last[prefix.length,content.last.length-prefix.length-suffix.length] )
       $stderr.puts "#{plugin_name}: #{path} missing or incorrect signature: not overwriting"
       return false
     end
@@ -174,10 +175,11 @@ class Wake::Plugin
 
   def sign pair, path
     return if !File.exists? path
-    pair[0] += "WAKE HASH: "
+    prefix = pair[0] + "WAKE HASH: "
+    suffix = pair[1] + ""
     content = File.read(path).split("\n").join("\n")
     File.open(path,"a") do |f|
-      f.print(pair[0],Digest::MD5.hexdigest(content),pair[1],"\n")
+      f.print(prefix,Digest::MD5.hexdigest(content),suffix,"\n")
     end
   end
 

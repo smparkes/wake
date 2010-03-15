@@ -27,6 +27,7 @@ module Wake
         end
 
         def init first_time, event
+          # puts "init #{pathname} #{type}\n"
           # p "w", path, first_time,(first_time ? :load : :created)
           # $stderr.puts "#{signature}: #{pathname}"
           update_reference_times
@@ -43,17 +44,17 @@ module Wake
 
         def file_modified
           SingleFileWatcher.handler.reset_watchdog
-          # p "mod", pathname, type
+          # puts "mod #{pathname} #{type}\n"
           SingleFileWatcher.handler.notify(pathname, type)
           update_reference_times
         end
 
         def file_moved
           SingleFileWatcher.handler.reset_watchdog
-          # p "mov", pathname
+          # puts "mov #{pathname} #{type}\n"
           SingleFileWatcher.handler.forget self, pathname
           begin
-            # $stderr.puts "stop.fm #{signature}: #{pathname}"
+            # # $stderr.puts "stop.fm #{signature}: #{pathname}"
             stop_watching
           rescue Exception => e
             $stderr.puts "exception while attempting to stop_watching in file_moved: #{e}"
@@ -63,6 +64,7 @@ module Wake
 
         def file_deleted
           SingleFileWatcher.handler.reset_watchdog
+          # puts "del #{pathname} #{type}\n"
           # p "del", pathname
           # $stderr.puts "stop.fd #{signature}: #{pathname} #{type}"
           SingleFileWatcher.handler.forget self, pathname
@@ -78,7 +80,7 @@ module Wake
 
         def stop
           SingleFileWatcher.handler.reset_watchdog
-          # p "stop", pathname
+          # puts "stop #{pathname} #{type}\n"
           begin
             # $stderr.puts "stop.s #{signature}: #{pathname}"
             stop_watching
@@ -110,9 +112,9 @@ module Wake
         #
         def type
           return :deleted   if !pathname.exist?
-          return :modified  if  pathname.mtime > @reference_mtime
-          return :accessed  if  pathname.atime > @reference_atime
-          return :changed   if  pathname.ctime > @reference_ctime
+          return :modified  if @reference_mtime && pathname.mtime > @reference_mtime
+          return :accessed  if @reference_mtime && pathname.atime > @reference_atime
+          return :changed   if @reference_mtime && pathname.ctime > @reference_ctime
         end
       end
 
@@ -178,7 +180,7 @@ module Wake
       require 'pp'
 
       def watch path, event = nil
-        # p "watch", path, @first_time
+        # puts "watch #{path} #{@first_time}"
         ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
           watcher.init @first_time, event
           @watchers[path] = watcher

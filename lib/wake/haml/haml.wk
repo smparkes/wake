@@ -1,3 +1,5 @@
+# -*- mode: ruby -*-
+
 class Wake::HAML < Wake::Plugin
 
   extend Wake::Plugin::Class
@@ -28,7 +30,3 @@ class Wake::HAML < Wake::Plugin
   end
 
 end
-
-# Local Variables:
-# mode:ruby
-# End:

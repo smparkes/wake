@@ -30,6 +30,7 @@ module Wake
     end
 
     def update path = nil, event_type = nil
+      # puts "update #{path} #{event_type}"
       if !path
         execute
       elsif path == :sig_quit
