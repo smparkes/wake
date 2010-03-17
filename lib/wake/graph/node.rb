@@ -5,9 +5,11 @@ class Wake::Graph::Node
 
   class DependenceSet
     attr_reader :node
+
     def initialize node
       @node = node
     end
+
     def nodes
       @nodes ||= {}
     end
@@ -47,6 +49,15 @@ class Wake::Graph::Node
 
   def initialize path
     @path = Pathname(path).to_s
+  end
+
+  def save!
+    FileUtils.mkdir_p Pathname(@path).dirname
+    open(@path,"w") do |f|
+      f.truncate 0
+      json = {"succeeded" => self.succeeded, "deps" => self.deps}.to_json
+      f.write(json)
+    end
   end
 
   def watchers

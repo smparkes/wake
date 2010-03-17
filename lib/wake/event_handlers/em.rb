@@ -3,6 +3,8 @@ require "eventmachine"
 require 'wake/event_handlers/unix'
 require 'wake/event_handlers/base'
 
+$em_print = false
+
 module Wake
   module EventHandler
     class EM
@@ -12,8 +14,8 @@ module Wake
       ::EM.kqueue = true if ::EM.kqueue?
       
       ::EM.error_handler do |e|
-        puts "EM recevied: #{e.message}"
-        puts e.backtrace
+        $stderr.puts "EM recevied: #{e.message}"
+        $stderr.puts e.backtrace
         exit
       end
 
@@ -27,7 +29,7 @@ module Wake
         end
 
         def init first_time, event
-          # puts "init #{pathname} #{type}\n"
+          $em_print and puts "init #{pathname} #{type}\n"
           # p "w", path, first_time,(first_time ? :load : :created)
           # $stderr.puts "#{signature}: #{pathname}"
           update_reference_times
@@ -44,14 +46,14 @@ module Wake
 
         def file_modified
           SingleFileWatcher.handler.reset_watchdog
-          # puts "mod #{pathname} #{type}\n"
+          $em_print and puts "mod #{pathname} #{type}\n"
           SingleFileWatcher.handler.notify(pathname, type)
           update_reference_times
         end
 
         def file_moved
           SingleFileWatcher.handler.reset_watchdog
-          # puts "mov #{pathname} #{type}\n"
+          $em_print and puts "mov #{pathname} #{type}\n"
           SingleFileWatcher.handler.forget self, pathname
           begin
             # # $stderr.puts "stop.fm #{signature}: #{pathname}"
@@ -64,7 +66,7 @@ module Wake
 
         def file_deleted
           SingleFileWatcher.handler.reset_watchdog
-          # puts "del #{pathname} #{type}\n"
+          $em_print and puts "del #{pathname} #{type}\n"
           # p "del", pathname
           # $stderr.puts "stop.fd #{signature}: #{pathname} #{type}"
           SingleFileWatcher.handler.forget self, pathname
@@ -80,7 +82,7 @@ module Wake
 
         def stop
           SingleFileWatcher.handler.reset_watchdog
-          # puts "stop #{pathname} #{type}\n"
+          $em_print and puts "stop #{pathname} #{type}\n"
           begin
             # $stderr.puts "stop.s #{signature}: #{pathname}"
             # stop_watching

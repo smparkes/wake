@@ -94,9 +94,11 @@ class Wake::Plugin
   def fire_all
     if fire_one
       lambda do |nodes|
+        success = true
         nodes.each do |node|
-          fire_one.call node
+          success &&= fire_one.call node
         end
+        success
       end
     else
       nil
@@ -119,9 +121,16 @@ class Wake::Plugin
   end
 
   def out_of_date? node, flag
+    raise "hell" if ![:changed, :failed, :all, :changed_failing].include? flag
     return true if !File.exists? node.path
     mtime = File.mtime node.path
-    node.depends_on.nodes.values.detect { |dep| File.exists?(dep.path) and File.mtime(dep.path) > mtime }
+    ood = node.depends_on.nodes.values.detect do |dep|
+      # puts "mtime #{dep.path} > #{node.path}" if (File.exists?(dep.path) and File.mtime(dep.path) > mtime)
+      File.exists?(dep.path) and File.mtime(dep.path) > mtime
+    end
+    return true if ood
+    return ( node.succeeded == false ) && flag == :failed || 
+            ( node.succeeded == true ) && flag == :all
   end
 
   private

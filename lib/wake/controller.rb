@@ -23,7 +23,7 @@ module Wake
 
     def run
       @script.parse!
-      @all = true
+      @state = :all
       graph = self.graph true
       handler.listen(graph.paths)
     rescue Interrupt
@@ -34,20 +34,23 @@ module Wake
       if !path
         execute
       elsif path == :sig_quit # ick!
-        @all = true
+        @state = :all
       else
         graph[path] and graph[path].changed!
       end
     end
 
     def execute
+      # p ">s", @state
+      fired = false
+      success = true
       graph = self.graph true
       # pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
       l = 0
-      graph.levelize(graph.nodes, :depends_on, @all).each do |level|
+      graph.levelize(graph.nodes, :depends_on, @state).each do |level|
         # pp level.map { |n| n.path }.sort
         l+=1
-        level = level.select { |n| n.out_of_date? @all ? :all : nil  }
+        level = level.select { |n| v = n.out_of_date? @state; puts "odd: #{n.path} #{@state} #{v}" if false && v != nil; v }
         plugin_hash = level.inject({}) do |hash,node|
           # p node.path, node.object_id, node.plugin ? node.plugin.class : "nope"
           if plugin = node.plugin
@@ -57,30 +60,24 @@ module Wake
           hash
         end
         plugin_hash.each do |plugin, nodes|
-          plugin.fire_all.call nodes
+          fired = true
+          success &&= plugin.fire_all.call nodes
         end
       end
-      @all = false
-    end
-
-    def _update(path, event_type = nil)
-      path = Pathname(path).expand_path
-      # p path, event_type
-      # if path == @script.path && ![ :load, :deleted, :moved ].include?(event_type)
-      if path == @script.path && event_type == :modified
-        @script.parse!
-        handler.refresh(monitored_paths)
+      if !success
+        @state = :changed_failing
       else
-        refresh = false
-        begin
-          @script.call_action_for(path, event_type)
-        rescue Refresh => refresh
-          refresh = true
-        end
-        if refresh or ( File.directory? path and event_type == :modified )
-          handler.refresh(monitored_paths)
+        if @state == :changed_failing
+          if fired
+            @state = :failed
+          end
+        elsif @state == :failed
+          @state = :all
+        else
+          @state = :changed
         end
       end
+      # p "<s", @state
     end
 
     def graph rescan = false

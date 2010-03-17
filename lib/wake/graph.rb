@@ -59,6 +59,15 @@ class Wake::Graph
     result
   end
 
+  def create node, options = {}
+    node = self << node
+    node.plugin = options[:plugin] if options[:plugin]
+    self[node].depends_on << options[:from] if options[:from] 
+    self[node].depended_on_by << options[:to] if options[:to] 
+    self[node].primary = options[:primary] if options[:primary] 
+    node
+  end
+
   private
 
   def node_hash
