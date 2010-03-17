@@ -65,6 +65,12 @@ opts = OptionParser.new do |opts|
   opts.parse! ARGV
 end
 
+$paths = ARGV.inject({}) do |hash,fn|
+  path = Pathname(fn).realpath.to_s
+  hash[path] = path
+  hash
+end
+
 path = Wake.options.wakefile || "Wakefile"
 relative_path = Pathname( path ) rescue abort(Wake::Bin.usage)
 Wake::Controller.new(Wake::Script.new(relative_path)).run

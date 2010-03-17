@@ -50,7 +50,16 @@ module Wake
       graph.levelize(graph.nodes, :depends_on, @state).each do |level|
         # pp level.map { |n| n.path }.sort
         l+=1
-        level = level.select { |n| v = n.out_of_date? @state; puts "odd: #{n.path} #{@state} #{v}" if false && v != nil; v }
+        level = level.select do |n|
+          v = false
+          path = Pathname(n.path).realpath.to_s
+          # p path, $paths[path]
+          if true or $paths.empty? or $paths[path]
+            v = n.out_of_date? @state
+          end
+          puts "odd: #{n.path} #{@state} #{v}" if false && v != nil
+          v
+        end
         plugin_hash = level.inject({}) do |hash,node|
           # p node.path, node.object_id, node.plugin ? node.plugin.class : "nope"
           if plugin = node.plugin

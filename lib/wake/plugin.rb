@@ -122,6 +122,14 @@ class Wake::Plugin
 
   def out_of_date? node, flag
     raise "hell" if ![:changed, :failed, :all, :changed_failing].include? flag
+
+    # a little screwy? ... but don't want to have to say .wake/...
+
+    if $paths
+      path = node.primary.path && Pathname(node.primary.path).realpath.to_s
+      return false if !$paths[path]
+    end
+
     return true if !File.exists? node.path
     mtime = File.mtime node.path
     ood = node.depends_on.nodes.values.detect do |dep|
