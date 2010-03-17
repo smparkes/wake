@@ -128,20 +128,15 @@ module Wake
 
     end
     
-    # Creates a script object for <tt>path</tt>.
-    #
-    # Does not parse the script.  The controller knows when to parse the script.
-    #
-    # ===== Parameters
-    # path<Pathname>:: the path to the script
-    #
+    attr_reader :rescan
+
     def initialize(path)
       self.class.script = self
       @path  = path
       @rules = []
       @default_action = lambda {}
       ignore %r{(^/?|/)\..}
-      directory { parse! }
+      directory { |n| @rescan = Time.now; Plugin.refresh }
       watch(path.to_s) { parse! }
     end
 
@@ -177,6 +172,9 @@ module Wake
     end
 
     def parse!
+      return if @modified_at && @modified_at >= File.mtime(@path)
+
+      # p "parse!"
       Wake.debug('loading script file %s' % @path.to_s.inspect)
 
       reset
@@ -197,15 +195,14 @@ module Wake
       end
 
       instance_eval(@path.read, @path)
+      @modified_at = File.mtime(@path)
 
     rescue Errno::ENOENT
       # TODO figure out why this is happening. still can't reproduce
       Wake.debug('script file "not found". wth')
       sleep(0.3) #enough?
       instance_eval(@path.read, @path)
-    ensure
-      # file time?
-      @modified_at = Time.now
+      @modified_at = File.mtime(@path)
     end
 
     attr_reader :modified_at

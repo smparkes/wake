@@ -83,7 +83,7 @@ module Wake
           # puts "stop #{pathname} #{type}\n"
           begin
             # $stderr.puts "stop.s #{signature}: #{pathname}"
-            stop_watching
+            # stop_watching
           rescue Exception => e
             $stderr.puts "exception while attempting to stop_watching in stop: #{e}"
           end
@@ -177,8 +177,6 @@ module Wake
         @old_paths.delete Pathname(path)
       end
 
-      require 'pp'
-
       def watch path, event = nil
         # puts "watch #{path} #{@first_time}"
         ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
@@ -211,7 +209,7 @@ module Wake
           new_paths = @monitored_paths - @old_paths
           remove_paths = @old_paths - @monitored_paths
           skip_paths = []
-          # p "want", @monitored_paths
+          # pp "want", @monitored_paths.sort
           # p "old", @old_paths
           # p "new", new_paths
           raise "hell" if @monitored_paths.length == 1

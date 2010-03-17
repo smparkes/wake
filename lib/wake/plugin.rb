@@ -131,6 +131,7 @@ class Wake::Plugin
     node.plugin = options[:plugin] if options[:plugin]
     graph[node].depends_on << options[:from] if options[:from] 
     graph[node].depended_on_by << options[:to] if options[:to] 
+    graph[node].primary = options[:primary] if options[:primary] 
     node
   end
 
@@ -138,24 +139,25 @@ class Wake::Plugin
     @cls ||= self.class
   end
 
-  def glob_contents
-    @glob_contents ||=
-      begin
-        if @glob
-          set = {}
-          globs = Array(@glob)
-          globs.each do |glob|
-           Dir[glob].each { |f| set[f] = f }
-          end
-          set
-        else
-          {}
-        end
-      end
+  def self.refresh
+    @last = Time.now
+  end
+
+  def self.glob_contents glob
+    @last ||= Time.now
+    @globs ||= {}
+    hash = (@globs[glob] ||= {})
+    if hash[:updated] && hash[:updated] >= @last
+      return hash[:set]
+    end
+    set = hash[:set] = {}
+    Dir[glob].each { |f| set[f] = f }    
+    hash[:updated] = @last
+    set
   end
 
   def glob_contains path
-    @glob == "**/*" ? true : glob_contents.has_key?( path )
+    @glob == "**/*" ? true : ::Wake::Plugin.glob_contents(@glob).has_key?( path )
   end
 
   def regexp_matches path
@@ -197,7 +199,7 @@ class Wake::Plugin
       return -1
     end
     if File.exists? node.path
-      FileUtils.rm node.path
+      ::FileUtils.rm node.path
     end
     print string, "\n"
     system string

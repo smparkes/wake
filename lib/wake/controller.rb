@@ -23,8 +23,8 @@ module Wake
 
     def run
       @script.parse!
-      graph = self.graph
       @all = true
+      graph = self.graph true
       handler.listen(graph.paths)
     rescue Interrupt
     end
@@ -33,7 +33,7 @@ module Wake
       # puts "update #{path} #{event_type}"
       if !path
         execute
-      elsif path == :sig_quit
+      elsif path == :sig_quit # ick!
         @all = true
       else
         graph[path] and graph[path].changed!
@@ -41,12 +41,13 @@ module Wake
     end
 
     def execute
-      graph = self.graph
+      graph = self.graph true
       # pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
       l = 0
       graph.levelize(graph.nodes, :depends_on, @all).each do |level|
+        # pp level.map { |n| n.path }.sort
         l+=1
-        level = level.select { |n| n.out_of_date? @all }
+        level = level.select { |n| n.out_of_date? @all ? :all : nil  }
         plugin_hash = level.inject({}) do |hash,node|
           # p node.path, node.object_id, node.plugin ? node.plugin.class : "nope"
           if plugin = node.plugin
@@ -82,9 +83,11 @@ module Wake
       end
     end
 
-    def graph
-      if @script_modified_at != @script.modified_at
+    def graph rescan = false
+      if !@graph || rescan && (@script_modified_at != @script.modified_at or @script_rescan != @script.rescan)
+        # puts "rescan #{@script_modified_at != @script.modified_at} #{@script_rescan != @script.rescan}"
         @script_modified_at = @script.modified_at
+        @script_rescan = @script.rescan
         # paths = Dir['**/*'].select do |path|
         @graph = Graph.new
         pruners = @script.plugins.map { |pi| pi.pruner }.compact
@@ -94,8 +97,8 @@ module Wake
           pruners.map { |pruner| pruner.call( path ) && Find.prune }
           watchers.map { |watcher| watcher.call( path, @graph ) }
         end
+        ::EM.reactor_running? and handler.refresh(@graph.paths)
       end
-
       # pp graph.paths
       # pp graph.levelize(graph.nodes,:depends_on).map { |level| level.map { |n| n.path } }
       # pp graph.levelize(graph.nodes(:depends_on),:depended_on_by).map { |level| level.map { |n| n.path } }
