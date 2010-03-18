@@ -24,7 +24,7 @@ class Wake::HAML < Wake::Plugin
   def fire_one
     lambda do |node|
       cmd node,
-          "haml -f #{cls.default[:options][:doctype].to_s || 'html'} #{node.primary_dependence.path} #{node.path}",
+          "haml -f #{cls.default[:options][:doctype].to_s || 'html'} #{node.primary.path} #{node.path}",
            :signature => ( cls.default[:options][:protect] ? [ "<!--", "-->" ] : nil )
     end
   end

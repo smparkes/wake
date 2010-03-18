@@ -12,10 +12,9 @@ class Wake::SASS < Wake::Plugin
     default = super
     lambda do |path, graph|
       if node = default.call(path, graph)
-        x = create graph, Node::File.new(node.path.sub(cls.default[:regexp],
+        create graph, Node::File.new(node.path.sub(cls.default[:regexp],
                                                     cls.default[:options][:suffix])),
                :from => node, :plugin => self, :primary => node
-        # p x.depends_on.nodes.map { |n| n.path }
       end
     end
   end
@@ -23,7 +22,7 @@ class Wake::SASS < Wake::Plugin
   def fire_one
     lambda do |node|
       cmd node,
-          "sass #{node.primary_dependence.path} #{node.path}",
+          "sass #{node.primary.path} #{node.path}",
            :signature => ( cls.default[:options][:protect] ? [ "/*", "*/" ] : nil )
     end
   end
