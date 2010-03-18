@@ -41,7 +41,7 @@ module Wake
     end
 
     def execute
-      # p ">s", @state
+      puts "execute: #{@state}"
       fired = false
       success = true
       graph = self.graph true
@@ -51,12 +51,7 @@ module Wake
         # pp level.map { |n| n.path }.sort
         l+=1
         level = level.select do |n|
-          v = false
-          path = Pathname(n.path).realpath.to_s
-          # p path, $paths[path]
-          if true or $paths.empty? or $paths[path]
-            v = n.out_of_date? @state
-          end
+          v = n.out_of_date? @state
           puts "odd: #{n.path} #{@state} #{v}" if false && v != nil
           v
         end
@@ -79,9 +74,11 @@ module Wake
         if @state == :changed_failing
           if fired
             @state = :failed
+            execute
           end
         elsif @state == :failed
           @state = :all
+          execute
         else
           @state = :changed
         end

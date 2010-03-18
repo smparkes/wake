@@ -15,7 +15,7 @@ class Wake::HAML < Wake::Plugin
       if node = default.call(path, graph)
         x = create graph, Node::File.new(node.path.sub(cls.default[:regexp],
                                                     cls.default[:options][:suffix])),
-               :from => node, :plugin => self
+               :from => node, :plugin => self, :primary => node
         # p x.depends_on.nodes.map { |n| n.path }
       end
     end

@@ -127,7 +127,9 @@ class Wake::Plugin
 
     if $paths
       path = node.primary.path && Pathname(node.primary.path).realpath.to_s
-      return false if !$paths[path]
+      # puts "skip #{node.path} #{flag}" if !$paths.empty? && !$paths[path]
+      return false if !$paths.empty? && !$paths[path]
+      # puts "run #{node.path} #{flag}"
     end
 
     return true if !File.exists? node.path
@@ -137,8 +139,9 @@ class Wake::Plugin
       File.exists?(dep.path) and File.mtime(dep.path) > mtime
     end
     return true if ood
+    # puts "#{self.class}: #{node.path}: #{node.succeeded} #{flag}"
     return ( node.succeeded == false ) && flag == :failed || 
-            ( node.succeeded == true ) && flag == :all
+            ( node.succeeded != nil ) && flag == :all
   end
 
   private
