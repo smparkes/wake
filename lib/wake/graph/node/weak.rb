@@ -10,7 +10,7 @@ class Wake::Graph::Node::Weak < Wake::Graph::Node
   end
 
   def succeeded
-    true
+    nil
   end
 
 end
