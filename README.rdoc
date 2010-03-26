@@ -1,7 +1,12 @@
-=== Summary
+= Wake
 
-The vision for wake is as a sort of rake/make like program, combined
-with the real-time filesystem "watching" aspect of autotest/autospec/watchr.
+* http://github.com/smparkes/wake
+
+== Description
+
+An incremental, realtime build and test driver. The vision for wake is
+as a sort of rake/make like program, combined with the real-time
+filesystem "watching" aspect of autotest/autospec/watchr.
 
 Wake started out (and still is) mostly a fork of the watchr gem at
 http://github.com/mynyml/watchr.
