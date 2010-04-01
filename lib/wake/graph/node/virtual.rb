@@ -1,3 +1,4 @@
+require 'fileutils'
 require 'wake/graph/node'
 
 class Wake::Graph::Node::Virtual < Wake::Graph::Node

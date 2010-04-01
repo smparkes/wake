@@ -65,9 +65,11 @@ opts = OptionParser.new do |opts|
   opts.parse! ARGV
 end
 
-$paths = ARGV.inject({}) do |hash,fn|
-  path = Pathname(fn).realpath.to_s
-  hash[path] = path
+$paths = ARGV.inject({}) do |hash,blob|
+  Dir[blob].each do |fn|
+    path = Pathname(fn).realpath.to_s
+    hash[path] = path
+  end
   hash
 end
 
