@@ -1,0 +1,30 @@
+# -*- mode: ruby -*-
+
+class Wake::SASS < Wake::Plugin
+
+  extend Wake::Plugin::Class
+
+  default :regexp => %r{\.sass$},
+          :options => { :suffix => ".css",
+                        :protect => true }
+
+  def watcher
+    default = super
+    lambda do |path, graph|
+      if node = default.call(path, graph)
+        create graph, Node::File.new(node.path.sub(cls.default[:regexp],
+                                                    cls.default[:options][:suffix])),
+               :from => node, :plugin => self, :primary => node
+      end
+    end
+  end
+
+  def fire_one
+    lambda do |node|
+      cmd node,
+          "sass #{node.primary.path} #{node.path}",
+           :signature => ( cls.default[:options][:protect] ? [ "/*", "*/" ] : nil )
+    end
+  end
+
+end

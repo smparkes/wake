@@ -1,7 +1,12 @@
-=== Summary
+= Wake
 
-The vision for wake is as a sort of rake/make like program, combined
-with the real-time filesystem "watching" aspect of autotest/autospec/watchr.
+* http://github.com/smparkes/wake
+
+== Description
+
+An incremental, realtime build and test driver. The vision for wake is
+as a sort of rake/make like program, combined with the real-time
+filesystem "watching" aspect of autotest/autospec/watchr.
 
 Wake started out (and still is) mostly a fork of the watchr gem at
 http://github.com/mynyml/watchr.
@@ -22,7 +27,7 @@ Discussions at http://groups.google.com/group/wake-talk and #wake at freenode.
 == EventMachine
 
 Not much to say. It supports EM as well as Rev, though the Rev stuff
-will probably be dropped unles there's a compelling reason to keep
+will probably be dropped unless there's a compelling reason to keep
 it. The default is still Rev. To use EventMachine, after installing
 the EM gem, I just add
 

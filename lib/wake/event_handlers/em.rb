@@ -3,6 +3,8 @@ require "eventmachine"
 require 'wake/event_handlers/unix'
 require 'wake/event_handlers/base'
 
+$em_print = false
+
 module Wake
   module EventHandler
     class EM
@@ -12,8 +14,8 @@ module Wake
       ::EM.kqueue = true if ::EM.kqueue?
       
       ::EM.error_handler do |e|
-        puts "EM recevied: #{e.message}"
-        puts e.backtrace
+        $stderr.puts "EM recevied: #{e.message}"
+        $stderr.puts e.backtrace
         exit
       end
 
@@ -27,11 +29,12 @@ module Wake
         end
 
         def init first_time, event
+          $em_print and puts "init #{pathname} #{type}\n"
           # p "w", path, first_time,(first_time ? :load : :created)
           # $stderr.puts "#{signature}: #{pathname}"
           update_reference_times
           # FIX: doesn't pass events
-          if !event
+          if !event && !first_time
             SingleFileWatcher.handler.notify(pathname, (first_time ? :load : :created) )
           end
         end
@@ -42,16 +45,18 @@ module Wake
         end
 
         def file_modified
-          # p "mod", pathname, type
+          SingleFileWatcher.handler.reset_watchdog
+          $em_print and puts "mod #{pathname} #{type}\n"
           SingleFileWatcher.handler.notify(pathname, type)
           update_reference_times
         end
 
         def file_moved
-          # p "mov", pathname
+          SingleFileWatcher.handler.reset_watchdog
+          $em_print and puts "mov #{pathname} #{type}\n"
           SingleFileWatcher.handler.forget self, pathname
           begin
-            # $stderr.puts "stop.fm #{signature}: #{pathname}"
+            # # $stderr.puts "stop.fm #{signature}: #{pathname}"
             stop_watching
           rescue Exception => e
             $stderr.puts "exception while attempting to stop_watching in file_moved: #{e}"
@@ -60,6 +65,8 @@ module Wake
         end
 
         def file_deleted
+          SingleFileWatcher.handler.reset_watchdog
+          $em_print and puts "del #{pathname} #{type}\n"
           # p "del", pathname
           # $stderr.puts "stop.fd #{signature}: #{pathname} #{type}"
           SingleFileWatcher.handler.forget self, pathname
@@ -74,10 +81,11 @@ module Wake
         end
 
         def stop
-          #  p "stop", pathname
+          SingleFileWatcher.handler.reset_watchdog
+          $em_print and puts "stop #{pathname} #{type}\n"
           begin
             # $stderr.puts "stop.s #{signature}: #{pathname}"
-            stop_watching
+            # stop_watching
           rescue Exception => e
             $stderr.puts "exception while attempting to stop_watching in stop: #{e}"
           end
@@ -106,9 +114,9 @@ module Wake
         #
         def type
           return :deleted   if !pathname.exist?
-          return :modified  if  pathname.mtime > @reference_mtime
-          return :accessed  if  pathname.atime > @reference_atime
-          return :changed   if  pathname.ctime > @reference_ctime
+          return :modified  if @reference_mtime && pathname.mtime > @reference_mtime
+          return :accessed  if @reference_mtime && pathname.atime > @reference_atime
+          return :changed   if @reference_mtime && pathname.ctime > @reference_ctime
         end
       end
 
@@ -118,6 +126,17 @@ module Wake
         @first_time = true
         @watchers = {}
         @attaching = false
+      end
+
+      def reset_watchdog
+        @watchdog.cancel if @watchdog
+        @watchdog = ::EM::Timer.new(0.01) do
+          @watchdog = nil
+          notify nil
+          if Wake.options.once
+            ::EM.stop
+          end
+        end
       end
 
       # Enters listening loop.
@@ -132,14 +151,12 @@ module Wake
           @first_time = true
           @watchers = {}
           ::EM.run do
+            Signal.trap('QUIT') { ::EM.stop; notify :sig_quit }
             attach
-            if Wake.options.once
-              Wake.batches.each do |k,v|
-                k.deliver
-              end
-              return 
-            end
+            reset_watchdog
           end
+          Signal.trap('QUIT', 'DEFAULT')
+          return if Wake.options.once
         end
       end
 
@@ -153,28 +170,22 @@ module Wake
       end
 
       def forget connection, path
-        if @watchers[path] != connection
+        if false and @watchers[path] != connection
           $stderr.puts \
             "warning: no/wrong watcher to forget for #{path}: #{@watchers[path]} vs #{connection}"
         end
         @watchers.delete path
-        raise "hell: #{path}" if !@old_paths.include? Pathname(path)
+        false and raise "hell: #{path}" if !@old_paths.include? Pathname(path)
         @old_paths.delete Pathname(path)
       end
 
       def watch path, event = nil
-        begin
-          # p "watch", path, @first_time
-          ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
-            watcher.init @first_time, event
-            @watchers[path] = watcher
-          end
-          @old_paths << path
-        rescue Errno::ENOENT => e
-          $stderr.puts e
-        rescue Exception => e
-          $stderr.puts e
+        # puts "watch #{path} #{@first_time}"
+        ::EM.watch_file path.to_s, SingleFileWatcher do |watcher|
+          watcher.init @first_time, event
+          @watchers[path] = watcher
         end
+        @old_paths << path
       end  
 
       def add path
@@ -199,7 +210,8 @@ module Wake
           @monitored_paths = @monitored_paths.uniq 
           new_paths = @monitored_paths - @old_paths
           remove_paths = @old_paths - @monitored_paths
-          # p "want", @monitored_paths
+          skip_paths = []
+          # pp "want", @monitored_paths.sort
           # p "old", @old_paths
           # p "new", new_paths
           raise "hell" if @monitored_paths.length == 1
@@ -208,14 +220,18 @@ module Wake
               $stderr.puts "warning: replacing (ignoring) watcher for #{path}"
               @watchers[path].stop
             end
-            watch path, event
+            begin
+              watch path, event
+            rescue Errno::ENOENT, EventMachine::Unsupported
+              skip_paths << path
+            end
           end
           remove_paths.each do |path|
             watcher = @watchers[path]
             watcher.stop if watcher
             @watchers.delete path
           end
-          @old_paths = @monitored_paths.dup
+          @old_paths = @monitored_paths - skip_paths
           # $stderr.print "#{new_paths} #{remove_paths}\n";
         end while !new_paths.empty? and !remove_paths.empty?
         @first_time = false

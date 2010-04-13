@@ -1,0 +1,5 @@
+# -*- mode: ruby -*-
+
+class Wake::Closure < Wake::Plugin
+  extend Wake::Plugin::Class
+end
