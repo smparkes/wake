@@ -132,4 +132,8 @@ class Wake::Graph::Node
     @watches << block
   end
 
+  def options
+    @options ||= {}
+  end
+
 end

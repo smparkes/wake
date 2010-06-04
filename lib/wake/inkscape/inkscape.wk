@@ -10,19 +10,22 @@ class Wake::Inkscape < Wake::Plugin
 
   default :regexp => %r{\.svg$},
           :options => { :format => :png,
-                        :output => default_output }
+                        :output => default_output,
+                        :widths => [] }
 
   def watcher
     default = super
     lambda do |path, graph|
       if node = default.call(path, graph)
-        cls.default[:options][:widths].each do |width|
-          output = cls.default[:options][:output].call(node.path,
-                                                       width,
-                                                       cls.default[:options][:format],
-                                                       cls.default[:regexp])
-          create graph, Node::File.new(output),
-                 :from => node, :plugin => self, :primary => node
+        options[:widths].each do |width|
+          output = options[:output].call(node.path,
+                                         width,
+                                         options[:format],
+                                         cls.default[:regexp])
+          new = create graph, Node::File.new(output),
+                       :from => node, :plugin => self, :primary => node
+          new.options[:width] = width
+          new
         end
       end
     end
@@ -30,9 +33,10 @@ class Wake::Inkscape < Wake::Plugin
 
   def fire_one
     lambda do |node|
-      width = ""
-      (match = /-(\d+)\./.match node.path) and begin
-        width = " -w #{match[1]}"
+      if width = node.options[:width]
+        width = " -w #{width}"
+      else
+        width = ""
       end
       cmd node, "inkscape -e #{node.path} #{node.primary.path}#{width}"
     end

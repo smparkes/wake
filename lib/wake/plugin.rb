@@ -81,11 +81,14 @@ class Wake::Plugin
     end
   end
 
-  def options args
-    @options = cls.default[:options]
-    if arg = args.shift
-      @options.merge! arg
+  def options args = nil
+    @options ||= cls.default[:options].dup
+    if args
+      if arg = args.shift
+        @options.merge! arg
+      end
     end
+    @options
   end
 
   def pruner; nil; end
