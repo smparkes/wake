@@ -4,16 +4,24 @@ class Wake::Inkscape < Wake::Plugin
 
   extend Wake::Plugin::Class
 
+  default_output = lambda do |path, width, format, regexp|
+    path.sub(regexp,"-#{width}.#{format}")
+  end
+
   default :regexp => %r{\.svg$},
-          :options => { :format => :png }
+          :options => { :format => :png,
+                        :output => default_output }
 
   def watcher
     default = super
     lambda do |path, graph|
       if node = default.call(path, graph)
         cls.default[:options][:widths].each do |width|
-          create graph, Node::File.new(node.path.sub(cls.default[:regexp],
-                                                      "-#{width}.#{cls.default[:options][:format]}")),
+          output = cls.default[:options][:output].call(node.path,
+                                                       width,
+                                                       cls.default[:options][:format],
+                                                       cls.default[:regexp])
+          create graph, Node::File.new(output),
                  :from => node, :plugin => self, :primary => node
         end
       end
