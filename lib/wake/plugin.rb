@@ -10,7 +10,10 @@ class Wake::Plugin
   module Class
 
     def plugin_name cls = self
-      names = cls.to_s.split("::").map { |n| n.downcase }
+      names = cls.to_s.split("::").map do |n|
+        n = n.gsub /([a-z])([A-Z])/, '\1_\2'
+        n.downcase
+      end
       begin
         method = names.pop
       end while [ "wake", "plugin" ].include? method and !names.empty?
