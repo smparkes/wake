@@ -16,7 +16,7 @@ Hoe.spec "wake" do
   self.readme_file              = "README.rdoc"
 
   self.extra_deps = [
-    ['smparkes-eventmachine', '>= 0.12.11']
+    ['eventmachine', '>= 0.12.11']
   ]
 
   self.extra_dev_deps = [

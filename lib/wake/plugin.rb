@@ -210,6 +210,13 @@ class Wake::Plugin
     true
   end
 
+  def signed_string pair, string
+    prefix = pair[0] + "WAKE HASH: "
+    suffix = pair[1] + ""
+    content = Digest::MD5.hexdigest(string.split("\n").join("\n"))
+    [string, prefix, content, suffix, "\n" ].join
+  end
+
   def sign pair, path
     return if !File.exists? path
     prefix = pair[0] + "WAKE HASH: "
@@ -231,6 +238,29 @@ class Wake::Plugin
     system string
     status = $?.exited? ? $?.exitstatus : 255
     return status if status > 0
+    sign sig, node.path if sig
+    bits = File.stat(node.path).mode
+    bits &= ~0222
+    FileUtils.chmod bits, node.path
+    return 0
+  end
+
+  def file node, string, options = {}
+    if sig = options[:signature] and !check_signature sig, node.path
+      return -1
+    end
+    if File.exists? node.path
+      signed = sig ? signed_string( sig, string) : string
+      old = open(node.path) {|f|f.read}
+      if (old == signed) 
+        print "touch #{node.path}\n"
+        ::FileUtils.touch node.path
+        return 0
+      end
+      ::FileUtils.rm node.path
+    end
+    print "generate #{node.path}\n"
+    open(node.path,"w"){|f|f.write string}
     sign sig, node.path if sig
     bits = File.stat(node.path).mode
     bits &= ~0222
