@@ -27,7 +27,9 @@ class Wake::CacheManifest < Wake::Plugin
       end
       files.sort!
       files.each do |file|
-        results << file.sub(%r{public/}, "")
+        string  = file.sub(%r{public/}, "/")
+        string = string.sub(%r{/index.html},"")
+        results << string
         sha1s << Digest::SHA1.hexdigest(open(file){|f| f.read})
       end      
       sha1 = Digest::SHA1.hexdigest(sha1s.join)
