@@ -295,12 +295,18 @@ module Wake
     def method_missing *args, &block
       method = args.shift.to_s
       begin
-        require method
-      rescue LoadError; end
+        require method.gsub(%r{_},"")
+      rescue LoadError => le
+        # p le
+      end
 
-      filename = File.join method, method +".wk"
+      filename = File.join(method, method +".wk").gsub(%r{_},"")
 
+      # p filename
+ 
       file = $:.map { |dir| File.join dir, filename }.detect { |f| File.exists? f }
+
+      # p file
 
       raise "no plugin '#{method}' found (might be a typo or other error)" if !file
 
