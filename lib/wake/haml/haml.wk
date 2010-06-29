@@ -4,7 +4,7 @@ class Wake::HAML < Wake::Plugin
 
   extend Wake::Plugin::Class
 
-  default :regexp => %r{\.haml$},
+  default :regexp => %r{(\.html)?\.haml$},
           :options => { :doctype => :html5,
                         :suffix => ".html",
                         :protect => true }
