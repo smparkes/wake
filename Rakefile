@@ -1,51 +1,35 @@
-require 'rake/rdoctask'
-begin
-  require 'yard'
-rescue LoadError, RuntimeError
+require 'rubygems'
+
+gem 'hoe', '>= 2.5'
+require 'hoe'
+
+Hoe.plugin :debugging, :doofus, :git
+Hoe.plugins.delete :rubyforge
+
+Hoe.spec "wake" do
+
+  developer 'Steven Parkes', 'smparkes@smparkes.net'
+
+  self.readme_file              = 'README.rdoc'
+  self.extra_rdoc_files         = Dir['*.rdoc']
+  self.history_file             = "CHANGELOG.rdoc"
+  self.readme_file              = "README.rdoc"
+
+  self.extra_deps = [
+    ['eventmachine', '>= 0.12.11']
+  ]
+
+  self.extra_dev_deps = [
+  ]
+
 end
 
-desc "Generate rdoc documentation."
-Rake::RDocTask.new(:rdoc => 'rdoc', :clobber_rdoc => 'rdoc:clean', :rerdoc => 'rdoc:force') { |rdoc|
-  rdoc.rdoc_dir = 'doc/rdoc'
-  rdoc.title    = "Wake"
-  rdoc.options << '--line-numbers' << '--inline-source'
-  rdoc.options << '--charset' << 'utf-8'
-  rdoc.main = 'README.rdoc'
-  rdoc.rdoc_files.include('README.rdoc')
-  rdoc.rdoc_files.include('TODO.txt')
-  rdoc.rdoc_files.include('LICENSE')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-}
-
-if defined? YARD
-  YARD::Rake::YardocTask.new do |t|
-    t.files   = %w( lib/**/*.rb )
-    t.options = %w( -o doc/yard --readme README.rdoc --files LICENSE,TODO.txt )
-  end
+task :test do
+  cmd = "wake --once"
+  puts cmd
+  system cmd
 end
 
-namespace(:test) do
-
-  desc "Run all tests"
-  task(:all) do
-    tests = Dir['test/**/test_*.rb'] - ['test/test_helper.rb']
-    cmd = "ruby -rubygems -Ilib -e'%w( #{tests.join(' ')} ).each {|file| require file }'"
-    puts cmd if ENV['VERBOSE']
-    system cmd
-  end
-
-  desc "Run all tests on multiple ruby versions (requires rvm with 1.8.6 and 1.8.7)"
-  task(:portability) do
-    versions = %w( 1.8.6  1.8.7 )
-    versions.each do |version|
-      system <<-BASH
-        bash -c 'source ~/.rvm/scripts/rvm;
-                 rvm use #{version};
-                 echo "--------- `ruby -v` ----------\n";
-                 rake -s test:all'
-      BASH
-    end
-  end
-end
-
-task :default => "test:all"
+# Local Variables:
+# mode:ruby
+# End:

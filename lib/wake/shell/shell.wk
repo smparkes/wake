@@ -1,0 +1,26 @@
+# -*- mode: ruby -*-
+
+class Wake::Shell < Wake::Plugin
+
+  extend Wake::Plugin::Class
+
+  default :options => {}
+
+  def watcher
+    default = super
+    lambda do |path, graph|
+      if node = default.call(path, graph)
+        output = options[:to]
+        create graph, Node::File.new(output),
+               :from => node, :plugin => self, :primary => node
+      end
+    end
+  end
+
+  def fire_one
+    lambda do |node|
+      cmd node, options[:cmd]
+    end
+  end
+
+end

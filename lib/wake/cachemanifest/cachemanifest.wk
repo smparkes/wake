@@ -1,0 +1,43 @@
+# -*- mode: ruby -*-
+
+class Wake::CacheManifest < Wake::Plugin
+
+  extend Wake::Plugin::Class
+
+  default :options => { :doctype => "text/cache-manifest",
+                        :protect => true }
+
+  def watcher
+    default = super
+    lambda do |path, graph|
+      if node = default.call(path, graph)
+        create graph, Node::File.new(options[:output]),
+               :from => node, :plugin => self, :primary => node
+      end
+    end
+  end
+
+  def fire_one
+    lambda do |node|
+      sha1s = []
+      results = [ "CACHE MANIFEST" ]
+      files = []
+      node.depends_on.each do |n|
+        files << n.path
+      end
+      files.sort!
+      files.each do |file|
+        string  = file.sub(%r{public/}, "/")
+        string = string.sub(%r{/index.html},"")
+        results << string
+        sha1s << Digest::SHA1.hexdigest(open(file){|f| f.read})
+      end      
+      sha1 = Digest::SHA1.hexdigest(sha1s.join)
+      results << "# #{sha1}"
+      results << ""
+      results = results.join("\n")
+      file node, results, :signature => ( cls.default[:options][:protect] ? [ "# ", "" ] : nil )
+    end
+  end
+
+end

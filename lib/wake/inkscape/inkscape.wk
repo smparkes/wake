@@ -1,0 +1,50 @@
+# -*- mode: ruby -*-
+
+class Wake::Inkscape < Wake::Plugin
+
+  extend Wake::Plugin::Class
+
+  default_output = lambda do |path, width, format, regexp|
+    path.sub(regexp,"-#{width}.#{format}")
+  end
+
+  default :regexp => %r{\.svg$},
+          :options => { :format => :png,
+                        :output => default_output,
+                        :widths => [] }
+
+  def watcher
+    default = super
+    lambda do |path, graph|
+      if node = default.call(path, graph)
+        options[:widths].each do |width|
+          output = nil
+          if String === options[:output]
+            output = options[:output]
+          else
+            output = options[:output].call(node.path,
+                                           width,
+                                           options[:format],
+                                           cls.default[:regexp])
+          end
+          new = create graph, Node::File.new(output),
+                       :from => node, :plugin => self, :primary => node
+          new.options[:width] = width
+          new
+        end
+      end
+    end
+  end
+
+  def fire_one
+    lambda do |node|
+      if width = node.options[:width]
+        width = " -w #{width}"
+      else
+        width = ""
+      end
+      cmd node, "inkscape -e #{node.path} #{node.primary.path}#{width}"
+    end
+  end
+
+end

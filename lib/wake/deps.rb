@@ -1,5 +1,5 @@
 require 'rubygems'
-require 'fsdb'
+# require 'fsdb'
 
 require 'wake/script'
 
@@ -8,19 +8,23 @@ class Wake::Script
   remove_method :depends_on, :depended_on_by
 
   def depends_on path
+    return []
     result = []
     begin
       result = db["file://"+Pathname(path).realpath.to_s + ".on.yml"] || []
-    rescue Exception => e; $stderr.print e end
+    rescue Errno::ENOENT => e
+    rescue Exception => e; $stderr.puts e + " " + __FILE__ + " " + __LINE__ + "\n"; end
     # $stderr.print "lookup #{'file://'+Pathname(path).realpath.to_s} : #{result.join(' ')}\n"
     result.map! { |f| f.sub! %r(^file://), "" }
   end
 
   def depended_on_by path
+    return []
     result = []
     begin
       result = db["file://"+Pathname(path).realpath.to_s + ".by.yml"] || []
-    rescue Exception => e; $stderr.print e end
+    rescue Errno::ENOENT => e
+    rescue Exception => e; $stderr.puts e + " " + __FILE__ + " " + __LINE__ + "\n"; end
     # $stderr.print "lookup #{'file://'+Pathname(path).realpath.to_s} : #{result.join(' ')}\n"
     result.map! { |f| f.sub! %r(^file://), "" }
   end

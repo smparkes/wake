@@ -1,0 +1,11 @@
+class Wake::Ignore < Wake::Plugin
+  extend Wake::Plugin::Class
+  def pruner
+    lambda { |path| match? path }
+  end
+  def watcher; nil; end
+end
+
+# Local Variables:
+# mode:ruby
+# End:
